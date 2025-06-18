@@ -83,9 +83,12 @@ if args.no_protein_move: # optionally change mass of these atoms to 0 to suppres
 
 modeller.addHydrogens(forcefield)
 
-integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
-
 # Add water 
+modeller.addSolvent(forcefield, model='tip3p', 
+                    boxSize=None, boxVectors=None, padding=None, numAdded=None, 
+                    positiveIon='Na+', negativeIon='Cl-', 
+                    ionicStrength=Quantity(value=0, unit=molar), 
+                    neutralize=True)
 
 # Add force
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
@@ -94,6 +97,7 @@ system.addForce(pullforce)
 
 print(f"Temperature: {temperature}")
 print(f"Time step: {tstep}")
+integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
 
 simulation = Simulation(modeller.topology, system, integrator)
 simulation.context.setPositions(modeller.positions)
