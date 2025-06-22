@@ -6,6 +6,7 @@ from openmm.unit import *
 # from sys import stdout
 
 import argparse
+import numpy as np
 
 # previously imported from params
 # steps = 1_000_000
@@ -22,10 +23,28 @@ parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelv
 parser.add_argument("--no-protein-move", action="store_true", help="Add this option to hold all atoms in the protein chain in place throughout the simulation.")
 args = parser.parse_args()
 
+def center_of_mass(pos, system, atoms): 
+    '''
+    Find the center of mass for a group of atoms in topology.
+    This should not be used for groups of atoms with altered masses (mass set
+    to zero to suppress movement). 
+
+    Input(s): 
+        pos:                    Positions within topology
+        system:                 System object from openMM
+        atoms (integer array):  Array of atom indices to compute center of mass 
+
+    Output(s): 
+        Center of mass (numpy array of euclidian coordinates).
+    '''
+    masses = np.array([system.getParticleMass(i.index) for i in atoms])
+    center_of_mass = sum(m * pos[i.index] for i, m in zip(atoms, masses)]) / masses.sum()
+    return center_of_mass
 
 def custom_force(atoms, force_constant):
     '''
-    Defines custom force pulling on a group of atoms
+    Define custom force pulling on a group of atoms
+
     Input(s): 
         atoms (str):            List of atoms ids to apply force to.
         f_constant (float):     Constant force * kcal/mole/A
@@ -34,6 +53,10 @@ def custom_force(atoms, force_constant):
         openmm.CustomCentroidBondForce object
     '''
     force_constant = force_constant * kilocalories_per_mole / angstroms
+
+    fx = 0.0
+    fy = 0.0
+    fz = -1.0 # apply force in the z direction only
 
     # pull = CustomCentroidBondForce(2, "-1*force_constant*distance(g1, g2)")
     pull = CustomCentroidBondForce(1, "force_constant * (x1*fx + y1*fy + z1*fz")
@@ -67,6 +90,7 @@ forcefield = ForceField('amber14-all.xml', 'amber14/tip3p.xml')
 modeller = Modeller(pdb.topology, pdb.positions)
 
 if len(list(modeller.topology.chains())) != 2:
+    # take care of possibly unbound protein and peptide list of residues
     raise Exception("Topology does not have exactly two chains.")
     
 for i, c in enumerate(modeller.topology.chains()):
@@ -75,7 +99,8 @@ for i, c in enumerate(modeller.topology.chains()):
 
 system = forcefield.createSystem(pdb.topology, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1*nanometer, constraints=HBonds)
 
-if args.no_protein_move: # optionally change mass of these atoms to 0 to suppress movement
+# optionally change mass of these atoms to 0 to suppress movement
+if args.no_protein_move: 
     print("Setting mass of the first chain (protein chain) to zero to suppress motion.")
     for residue in protein:
         for atom in residue.atoms():
@@ -83,17 +108,23 @@ if args.no_protein_move: # optionally change mass of these atoms to 0 to suppres
 
 modeller.addHydrogens(forcefield)
 
-# Add water 
+# Add water as solvent
 modeller.addSolvent(forcefield, model='tip3p', 
-                    boxSize=None, boxVectors=None, padding=None, numAdded=None, 
-                    positiveIon='Na+', negativeIon='Cl-', 
-                    ionicStrength=Quantity(value=0, unit=molar), 
+                    positiveIon='Na+', negativeIon='Cl-',
+                    padding= 1 * nanometer, 
                     neutralize=True)
 
-# Add force
+# Add custom force pulling on the peptide
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
 pullforce = custom_force(peptide_atoms, 200)
 system.addForce(pullforce)
+
+f0_peptide_center = center_of_mass(
+        modeller.positions,
+        system,
+        [a for i in peptide for a in i.atoms()])
+
+print(f0_peptide_center)
 
 print(f"Temperature: {temperature}")
 print(f"Time step: {tstep}")
@@ -102,10 +133,11 @@ integrator = LangevinIntegrator(temperature, 1/picosecond, tstep)
 simulation = Simulation(modeller.topology, system, integrator)
 simulation.context.setPositions(modeller.positions)
 
-# get initial potential energy before the simulation begins
-# t0_potential = simulation.context.getState(getEnergy=True.getPotentialEnergy()
+# Andrew imports a custom reporter from md_helper.py 
+# but I cannot see that it is actually called for SMD...
+
 simulation.minimizeEnergy()
-simulation.reporters.append(PDBReporter('testing_output_c16_ala.pdb', store))
+simulation.reporters.append(PDBReporter('output.pdb', store))
 simulation.reporters.append(StateDataReporter(stdout, store, step=True, potentialEnergy=True, temperature=True))
 simulation.step(steps)
 
