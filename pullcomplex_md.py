@@ -38,7 +38,7 @@ def center_of_mass(pos, system, atoms):
         Center of mass (numpy array of euclidian coordinates).
     '''
     masses = np.array([system.getParticleMass(i.index) for i in atoms])
-    center_of_mass = sum(m * pos[i.index] for i, m in zip(atoms, masses)]) / masses.sum()
+    center_of_mass = sum([m * pos[i.index] for i, m in zip(atoms, masses)]) / masses.sum()
     return center_of_mass
 
 def custom_force(atoms, force_constant):
