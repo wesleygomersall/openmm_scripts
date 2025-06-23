@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO
-# store statistics to a file named something like output/energies.txt 
-# store distances to a file named something like output/distances.txt
-
 from openmm.app import *
 from openmm import *
 from openmm.unit import *
@@ -91,6 +87,8 @@ pressure = args.pressure * atmosphere
 temperature = args.temp * kelvin
 store = args.steps // 100 # store data 100 times depending on total steps 
 output_pdb_path = args.output + "/output.pdb"
+output_energy_stats = args.output + "/stats.csv"
+output_displacement = args.output + "/displacement.csv"
 print(f"Reading input pdb {args.input}")
 pdb = PDBFile(args.input)
 
@@ -156,11 +154,12 @@ simulation.minimizeEnergy()
 minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 print(f"Potential energy after minimization: {minimized_sim_energy}")
 
+print("Running sumulation, storing data every {store} iterations.")
 # Andrew imports a custom reporter from md_helper.py 
 # but I cannot see that it is actually called for SMD...
 
 simulation.reporters.append(PDBReporter(output_pdb_path, store))
-simulation.reporters.append(StateDataReporter(stdout, # change this to a file, not stdout
+simulation.reporters.append(StateDataReporter(output_energy_stats, 
                                               store, 
                                               step=True, 
                                               time=True,
@@ -172,14 +171,15 @@ simulation.reporters.append(StateDataReporter(stdout, # change this to a file, n
 
 for step in range(args.steps):
     simulation.step(1)
-
+    # if step % store == 0 and step != 0: 
     peptide_center = center_of_mass(
-        simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
-        simulation.context.getSystem(),
-        [a for i in peptide for a in i.atoms()])
+            simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
+            simulation.context.getSystem(),
+            [a for i in peptide for a in i.atoms()])
     # distance = peptide_center - t0_peptide_center
     distance = np.linalg.norm(peptide_center - t0_peptide_center)
-    # print(f"{step} {distance}") # do not print this every single step! 
+    # distout.write(f"{step},{distance}\n")
+    print(f"{step},{distance}")
 
 # Before using the above loop I used this to advance the steps 
 # simulation.step(args.steps)
