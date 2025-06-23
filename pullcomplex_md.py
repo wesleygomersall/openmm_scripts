@@ -77,6 +77,7 @@ def custom_force(atoms, force_constant):
     # pull.addGroup(g1)
     # pull.addGroup(g2)
     pull.addGroup(atoms)
+    pull.addBond([0])
 
     return pull
 
