@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 
+# TODO
+# store statistics to a file named something like output/energies.txt 
+# store distances to a file named something like output/distances.txt
+
 from openmm.app import *
 from openmm import *
 from openmm.unit import *
-# from sys import stdout
 
+from sys import stdout
 import argparse
 import numpy as np
 
@@ -52,21 +56,21 @@ def custom_force(atoms, force_constant):
     Output(s): 
         openmm.CustomCentroidBondForce object
     '''
-    force_constant = force_constant * kilocalories_per_mole / angstroms
+    force_constant *= kilocalories_per_mole / angstroms
 
     fx = 0.0
     fy = 0.0
     fz = -1.0 # apply force in the z direction only
 
     # pull = CustomCentroidBondForce(2, "-1*force_constant*distance(g1, g2)")
-    pull = CustomCentroidBondForce(1, "force_constant * (x1*fx + y1*fy + z1*fz")
+    pull = CustomCentroidBondForce(1, "force_constant * (x1*fx + y1*fy + z1*fz)")
 
     # pull.addPerBondParameter("force_constant", force_constant)
     pull.addGlobalParameter("force_constant", force_constant)
     # pull.addPerBondParameter("fx", fx)
     pull.addGlobalParameter("fx", fx)
     # pull.addPerBondParameter("fy", fy)
-    pull.addPerBondParameter("fy", fy)
+    pull.addGlobalParameter("fy", fy)
     # pull.addPerBondParameter("fz", fz)
     pull.addGlobalParameter("fz", fz)
 
@@ -77,14 +81,17 @@ def custom_force(atoms, force_constant):
     return pull
 
 if not os.path.exists(args.output):
+    print(f"making directory: {args.output}")
     os.mkdir(args.output)
 
 tstep = args.timestep * femtoseconds
 # Noora suggested 1.0*picoseconds step size
 pressure = args.pressure * atmosphere
 temperature = args.temp * kelvin
-pdb = PDBFile(args.input)
+store = args.steps // 100 # store data 100 times depending on total steps 
+output_pdb_path = args.output + "/output.pdb"
 print(f"Reading input pdb {args.input}")
+pdb = PDBFile(args.input)
 
 forcefield = ForceField('amber14-all.xml', 'amber14/tip3p.xml')
 modeller = Modeller(pdb.topology, pdb.positions)
@@ -97,8 +104,6 @@ for i, c in enumerate(modeller.topology.chains()):
     if i == 0: protein = [res for res in c.residues()]
     else: peptide = [res for res in c.residues()]
 
-system = forcefield.createSystem(pdb.topology, nonbondedMethod=app.NoCutoff, nonbondedCutoff=1*nanometer, constraints=HBonds)
-
 # optionally change mass of these atoms to 0 to suppress movement
 if args.no_protein_move: 
     print("Setting mass of the first chain (protein chain) to zero to suppress motion.")
@@ -106,39 +111,74 @@ if args.no_protein_move:
         for atom in residue.atoms():
             system.setParticleMass(int(atom.id), 0)
 
+print("Adding hydrogen atoms.")
 modeller.addHydrogens(forcefield)
 
 # Add water as solvent
+print("Adding solvent: water")
 modeller.addSolvent(forcefield, model='tip3p', 
                     positiveIon='Na+', negativeIon='Cl-',
                     padding= 1 * nanometer, 
                     neutralize=True)
 
-# Add custom force pulling on the peptide
+# create system needs to be after adding solvent and hydrogens
+system = forcefield.createSystem(modeller.topology, 
+                                 nonbondedMethod=app.NoCutoff, 
+                                 nonbondedCutoff=1*nanometer, 
+                                 constraints=HBonds)
+
+# Add custom force pulling on the peptide to the system
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
 pullforce = custom_force(peptide_atoms, 200)
 system.addForce(pullforce)
 
-f0_peptide_center = center_of_mass(
-        modeller.positions,
-        system,
-        [a for i in peptide for a in i.atoms()])
-
-print(f0_peptide_center)
-
-print(f"Temperature: {temperature}")
-print(f"Time step: {tstep}")
 integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
 
 simulation = Simulation(modeller.topology, system, integrator)
 simulation.context.setPositions(modeller.positions)
 
+print("Calculating initial center of mass location.")
+t0_peptide_center = center_of_mass(
+        modeller.positions,
+        system,
+        [a for i in peptide for a in i.atoms()])
+
+print("Calculating initial potential energy")
+t0_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+
+print(f"Temperature: {temperature}")
+print(f"Time step: {tstep}")
+print(f"Initial peptide center of mass: {t0_peptide_center}")
+
+print(f"Initial potential energy: {t0_sim_energy}")
+simulation.minimizeEnergy()
+minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+print(f"Potential energy after minimization: {minimized_sim_energy}")
+
 # Andrew imports a custom reporter from md_helper.py 
 # but I cannot see that it is actually called for SMD...
 
-simulation.minimizeEnergy()
-simulation.reporters.append(PDBReporter('output.pdb', store))
-simulation.reporters.append(StateDataReporter(stdout, store, step=True, potentialEnergy=True, temperature=True))
-simulation.step(steps)
+simulation.reporters.append(PDBReporter(output_pdb_path, store))
+simulation.reporters.append(StateDataReporter(stdout, # change this to a file, not stdout
+                                              store, 
+                                              step=True, 
+                                              time=True,
+                                              potentialEnergy=True, 
+                                              kineticEnergy=True,
+                                              totalEnergy=True,
+                                              temperature=True,
+                                              elapsedTime=True))
 
+for step in range(args.steps):
+    simulation.step(1)
 
+    peptide_center = center_of_mass(
+        simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
+        simulation.context.getSystem(),
+        [a for i in peptide for a in i.atoms()])
+    # distance = peptide_center - t0_peptide_center
+    distance = np.linalg.norm(peptide_center - t0_peptide_center)
+    # print(f"{step} {distance}") # do not print this every single step! 
+
+# Before using the above loop I used this to advance the steps 
+# simulation.step(args.steps)
