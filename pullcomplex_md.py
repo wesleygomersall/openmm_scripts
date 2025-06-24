@@ -18,8 +18,10 @@ parser.add_argument("--input", type=str, help="Path to input pdb containing both
 parser.add_argument("--output", type=str, help="Path to output directory. Will be created if not already existing.")
 parser.add_argument("--timestep", type=float, default=2.0, help="Time between steps in femtoseconds, default is 2.")
 parser.add_argument("--steps", type=int, default=10_000, help="Total steps in simulation, default is ten thousand.")
+parser.add_argument("--freq", type=int, default=1_000, help="Frequency of reporter, will record data `freq` amount of times (every `step // freq` steps).")
 parser.add_argument("--pressure", type=float, default=1.0, help="Pressure (atmospheres), default is 1 atm.")
 parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelvin), default is 300K.")
+parser.add_argument("--pull-force", type=float, default=25.0, help="Pull force constant which will be applied to the peptide.")
 parser.add_argument("--add-water", action="store_true", help="Add this option to populate modeller with a surrounding box of water molecules.")
 parser.add_argument("--no-protein-move", action="store_true", help="Add this option to hold all atoms in the protein chain in place throughout the simulation.")
 args = parser.parse_args()
@@ -76,8 +78,8 @@ tstep = args.timestep * femtoseconds
 # Noora suggested 1.0*picoseconds step size
 pressure = args.pressure * atmosphere
 temperature = args.temp * kelvin
-freq = 1000 # store data `freq` times depending on total steps 
-store = args.steps // freq
+# freq = 1000 # store data `freq` times depending on total steps 
+store = args.steps // args.freq
 output_log_path = args.output + "/log.txt"
 output_pdb_path = args.output + "/output.pdb"
 output_energy_stats = args.output + "/stats.csv"
@@ -125,7 +127,7 @@ system = forcefield.createSystem(modeller.topology,
 
 # Add custom force pulling on the peptide to the system
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
-pullforce = custom_force(peptide_atoms, 25)
+pullforce = custom_force(peptide_atoms, args.pull_force)
 system.addForce(pullforce)
 
 integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
