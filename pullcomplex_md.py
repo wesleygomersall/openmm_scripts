@@ -59,24 +59,18 @@ def custom_force(atoms, force_constant):
     fy = 0.0
     fz = -1.0 # apply force in the z direction only
 
-    # pull = CustomCentroidBondForce(2, "-1*force_constant*distance(g1, g2)")
     pull = CustomCentroidBondForce(1, "force_constant * (x1*fx + y1*fy + z1*fz)")
-
-    # pull.addPerBondParameter("force_constant", force_constant)
     pull.addGlobalParameter("force_constant", force_constant)
-    # pull.addPerBondParameter("fx", fx)
     pull.addGlobalParameter("fx", fx)
-    # pull.addPerBondParameter("fy", fy)
     pull.addGlobalParameter("fy", fy)
-    # pull.addPerBondParameter("fz", fz)
     pull.addGlobalParameter("fz", fz)
-
-    # pull.addGroup(g1)
-    # pull.addGroup(g2)
     pull.addGroup(atoms)
     pull.addBond([0])
 
     return pull
+
+if not os.path.exists(args.output):
+    os.mkdir(args.output)
 
 tstep = args.timestep * femtoseconds
 # Noora suggested 1.0*picoseconds step size
@@ -90,10 +84,6 @@ output_energy_stats = args.output + "/stats.csv"
 output_displacement = args.output + "/displacement.csv"
 
 log = open(output_log_path, 'w') # write run info to this log rather than stdout
-
-if not os.path.exists(args.output):
-    log.write(f"making directory: {args.output}\n")
-    os.mkdir(args.output)
 
 log.write(f"Reading input pdb {args.input}\n")
 pdb = PDBFile(args.input)
