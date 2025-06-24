@@ -127,6 +127,7 @@ system = forcefield.createSystem(modeller.topology,
 
 # Add custom force pulling on the peptide to the system
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
+log.write(f"Pull force constant: {args.pull_force}\n")
 pullforce = custom_force(peptide_atoms, args.pull_force)
 system.addForce(pullforce)
 
@@ -145,7 +146,6 @@ log.write("Calculating initial potential energy\n")
 t0_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
 log.write(f"Temperature: {temperature}\n")
-log.write(f"Time step: {tstep}\n")
 log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
 
 log.write(f"Initial potential energy: {t0_sim_energy}\n")
@@ -153,6 +153,8 @@ simulation.minimizeEnergy()
 minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 log.write(f"Potential energy after minimization: {minimized_sim_energy}\n")
 
+log.write(f"Running simulation for {steps} steps.\n")
+log.write(f"Time step: {tstep}\n")
 log.write(f"Running sumulation, storing data every {store} iterations.\n")
 
 # Andrew imports a custom reporter from md_helper.py 
