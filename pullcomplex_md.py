@@ -153,7 +153,7 @@ simulation.minimizeEnergy()
 minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 log.write(f"Potential energy after minimization: {minimized_sim_energy}\n")
 
-log.write(f"Running simulation for {steps} steps.\n")
+log.write(f"Running simulation for {args.steps} steps.\n")
 log.write(f"Time step: {tstep}\n")
 log.write(f"Running sumulation, storing data every {store} iterations.\n")
 
