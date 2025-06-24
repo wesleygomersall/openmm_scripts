@@ -86,7 +86,8 @@ tstep = args.timestep * femtoseconds
 # Noora suggested 1.0*picoseconds step size
 pressure = args.pressure * atmosphere
 temperature = args.temp * kelvin
-store = args.steps // 100 # store data 100 times depending on total steps 
+freq = 1000 # store data `freq` times depending on total steps 
+store = args.steps // freq
 output_pdb_path = args.output + "/output.pdb"
 output_energy_stats = args.output + "/stats.csv"
 output_displacement = args.output + "/displacement.csv"

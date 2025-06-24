@@ -23,7 +23,7 @@ module load cuda
 python3 ~/openmm_scripts/pullcomplex_md.py \
     --input /projects/parisahlab/wesg/openmm/comd_c16_ala_af3multimer_pdbfixed.pdb \
     --output ~/openmm_scripts/testing1 \
-    --steps 500000
+    --steps 20000
 
 # /projects/parisahlab/wesg/openmm/comd_c16_ala_af3multimer_pdbfixed.pdb
 # other input for testing comd_c16_af3multimer_pdbfixed.pdb
