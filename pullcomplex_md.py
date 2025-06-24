@@ -192,3 +192,5 @@ with open(output_displacement, "w") as dispout:
 
 # Before using the above loop I used this to advance the steps 
 # simulation.step(args.steps)
+
+log.close() # close the log file 
