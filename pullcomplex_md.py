@@ -173,18 +173,20 @@ simulation.reporters.append(StateDataReporter(output_energy_stats,
                                               temperature=True,
                                               elapsedTime=True))
 
-for step in range(args.steps):
-    simulation.step(1)
-    # if step % store == 0 and step != 0: 
-    peptide_center = center_of_mass(
-            simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
-            simulation.context.getSystem(),
-            [a for i in peptide for a in i.atoms()])
-    # distance = peptide_center - t0_peptide_center
-    distance = np.linalg.norm(peptide_center - t0_peptide_center)
-    # distout.write(f"{step},{distance}\n")
-    if (step + 1) % store == 0: 
-        print(f"{step+1},{distance},{peptide_center}")
+with open(output_displacement, "w") as dispout: 
+    for step in range(args.steps):
+        simulation.step(1)
+        # if step % store == 0 and step != 0: 
+        peptide_center = center_of_mass(
+                simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
+                simulation.context.getSystem(),
+                [a for i in peptide for a in i.atoms()])
+        # distance = peptide_center - t0_peptide_center
+        distance = np.linalg.norm(peptide_center - t0_peptide_center)
+        # distout.write(f"{step},{distance}\n")
+        if (step + 1) % store == 0: 
+            # print(f"{step+1},{distance},{peptide_center}")
+            dispout.write(f"{step+1},{distance},{peptide_center}\n")
 
 # Before using the above loop I used this to advance the steps 
 # simulation.step(args.steps)
