@@ -20,6 +20,7 @@ parser.add_argument("--timestep", type=float, default=2.0, help="Time between st
 parser.add_argument("--steps", type=int, default=10_000, help="Total steps in simulation, default is ten thousand.")
 parser.add_argument("--pressure", type=float, default=1.0, help="Pressure (atmospheres), default is 1 atm.")
 parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelvin), default is 300K.")
+parser.add_argument("--add-water", action="store_true", help="Add this option to populate modeller with a surrounding box of water molecules.")
 parser.add_argument("--no-protein-move", action="store_true", help="Add this option to hold all atoms in the protein chain in place throughout the simulation.")
 args = parser.parse_args()
 
@@ -113,12 +114,13 @@ if args.no_protein_move:
 print("Adding hydrogen atoms.")
 modeller.addHydrogens(forcefield)
 
-# Add water as solvent
-print("Adding solvent: water")
-modeller.addSolvent(forcefield, model='tip3p', 
-                    positiveIon='Na+', negativeIon='Cl-',
-                    padding= 1 * nanometer, 
-                    neutralize=True)
+# Optionally add water as solvent
+if args.add_water: 
+    print("Adding solvent: water")
+    modeller.addSolvent(forcefield, model='tip3p', 
+                        positiveIon='Na+', negativeIon='Cl-',
+                        padding= 1 * nanometer, 
+                        neutralize=True)
 
 # create system needs to be after adding solvent and hydrogens
 system = forcefield.createSystem(modeller.topology, 
@@ -128,7 +130,7 @@ system = forcefield.createSystem(modeller.topology,
 
 # Add custom force pulling on the peptide to the system
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
-pullforce = custom_force(peptide_atoms, 200)
+pullforce = custom_force(peptide_atoms, 100)
 system.addForce(pullforce)
 
 integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
@@ -154,7 +156,7 @@ simulation.minimizeEnergy()
 minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 print(f"Potential energy after minimization: {minimized_sim_energy}")
 
-print("Running sumulation, storing data every {store} iterations.")
+print(f"Running sumulation, storing data every {store} iterations.")
 # Andrew imports a custom reporter from md_helper.py 
 # but I cannot see that it is actually called for SMD...
 
@@ -179,7 +181,7 @@ for step in range(args.steps):
     # distance = peptide_center - t0_peptide_center
     distance = np.linalg.norm(peptide_center - t0_peptide_center)
     # distout.write(f"{step},{distance}\n")
-    print(f"{step},{distance}")
+    print(f"{step+1},{distance},{peptide_center}")
 
 # Before using the above loop I used this to advance the steps 
 # simulation.step(args.steps)
