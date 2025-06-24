@@ -78,20 +78,24 @@ def custom_force(atoms, force_constant):
 
     return pull
 
-if not os.path.exists(args.output):
-    print(f"making directory: {args.output}")
-    os.mkdir(args.output)
-
 tstep = args.timestep * femtoseconds
 # Noora suggested 1.0*picoseconds step size
 pressure = args.pressure * atmosphere
 temperature = args.temp * kelvin
 freq = 1000 # store data `freq` times depending on total steps 
 store = args.steps // freq
+output_log_path = args.output + "/log.txt"
 output_pdb_path = args.output + "/output.pdb"
 output_energy_stats = args.output + "/stats.csv"
 output_displacement = args.output + "/displacement.csv"
-print(f"Reading input pdb {args.input}")
+
+log = open(output_log_path, 'w') # write run info to this log rather than stdout
+
+if not os.path.exists(args.output):
+    log.write(f"making directory: {args.output}\n")
+    os.mkdir(args.output)
+
+log.write(f"Reading input pdb {args.input}\n")
 pdb = PDBFile(args.input)
 
 forcefield = ForceField('amber14-all.xml', 'amber14/tip3p.xml')
@@ -107,17 +111,17 @@ for i, c in enumerate(modeller.topology.chains()):
 
 # optionally change mass of these atoms to 0 to suppress movement
 if args.no_protein_move: 
-    print("Setting mass of the first chain (protein chain) to zero to suppress motion.")
+    log.write("Setting mass of the first chain (protein chain) to zero to suppress motion.\n")
     for residue in protein:
         for atom in residue.atoms():
             system.setParticleMass(int(atom.id), 0)
 
-print("Adding hydrogen atoms.")
+log.write("Adding hydrogen atoms.\n")
 modeller.addHydrogens(forcefield)
 
 # Optionally add water as solvent
 if args.add_water: 
-    print("Adding solvent: water")
+    log.write("Adding solvent: water\n")
     modeller.addSolvent(forcefield, model='tip3p', 
                         positiveIon='Na+', negativeIon='Cl-',
                         padding= 1 * nanometer, 
@@ -139,25 +143,25 @@ integrator = LangevinIntegrator(temperature, 1/picosecond, tstep)
 simulation = Simulation(modeller.topology, system, integrator)
 simulation.context.setPositions(modeller.positions)
 
-print("Calculating initial center of mass location.")
+log.write("Calculating initial center of mass location.\n")
 t0_peptide_center = center_of_mass(
         modeller.positions,
         system,
         [a for i in peptide for a in i.atoms()])
 
-print("Calculating initial potential energy")
+log.write("Calculating initial potential energy\n")
 t0_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 
-print(f"Temperature: {temperature}")
-print(f"Time step: {tstep}")
-print(f"Initial peptide center of mass: {t0_peptide_center}")
+log.write(f"Temperature: {temperature}\n")
+log.write(f"Time step: {tstep}\n")
+log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
 
-print(f"Initial potential energy: {t0_sim_energy}")
+log.write(f"Initial potential energy: {t0_sim_energy}\n")
 simulation.minimizeEnergy()
 minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-print(f"Potential energy after minimization: {minimized_sim_energy}")
+log.write(f"Potential energy after minimization: {minimized_sim_energy}\n")
 
-print(f"Running sumulation, storing data every {store} iterations.")
+log.write(f"Running sumulation, storing data every {store} iterations.\n")
 
 # Andrew imports a custom reporter from md_helper.py 
 # but it looks like he prints displacement to stdout for SMD.
@@ -174,6 +178,7 @@ simulation.reporters.append(StateDataReporter(output_energy_stats,
                                               elapsedTime=True))
 
 with open(output_displacement, "w") as dispout: 
+    dispout.write("Step,Distance(nm),PeptideCenterCoordinate\n")
     for step in range(args.steps):
         simulation.step(1)
         peptide_center = center_of_mass(
