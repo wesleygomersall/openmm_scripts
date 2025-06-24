@@ -130,7 +130,7 @@ system = forcefield.createSystem(modeller.topology,
 
 # Add custom force pulling on the peptide to the system
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
-pullforce = custom_force(peptide_atoms, 100)
+pullforce = custom_force(peptide_atoms, 25)
 system.addForce(pullforce)
 
 integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
@@ -157,8 +157,9 @@ minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialE
 print(f"Potential energy after minimization: {minimized_sim_energy}")
 
 print(f"Running sumulation, storing data every {store} iterations.")
+
 # Andrew imports a custom reporter from md_helper.py 
-# but I cannot see that it is actually called for SMD...
+# but it looks like he prints displacement to stdout for SMD.
 
 simulation.reporters.append(PDBReporter(output_pdb_path, store))
 simulation.reporters.append(StateDataReporter(output_energy_stats, 
@@ -181,7 +182,8 @@ for step in range(args.steps):
     # distance = peptide_center - t0_peptide_center
     distance = np.linalg.norm(peptide_center - t0_peptide_center)
     # distout.write(f"{step},{distance}\n")
-    print(f"{step+1},{distance},{peptide_center}")
+    if (step + 1) % store == 0: 
+        print(f"{step+1},{distance},{peptide_center}")
 
 # Before using the above loop I used this to advance the steps 
 # simulation.step(args.steps)
