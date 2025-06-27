@@ -121,8 +121,9 @@ if args.add_water:
 
 # create system needs to be after adding solvent and hydrogens
 system = forcefield.createSystem(modeller.topology, 
-                                 nonbondedMethod=app.NoCutoff, 
+                                 nonbondedMethod=app.PME, # changed from app.NoCutoff
                                  nonbondedCutoff=1*nanometer, 
+                                 removeCMMotion=False,
                                  constraints=HBonds)
 
 # Add custom force pulling on the peptide to the system
@@ -133,7 +134,7 @@ system.addForce(pullforce)
 
 integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
 
-simulation = Simulation(modeller.topology, system, integrator)
+simulation = Simulation(modeller.topology, system, integrator, openmm.Platform.getPlatformByName('CUDA'))
 simulation.context.setPositions(modeller.positions)
 
 log.write("Calculating initial center of mass location.\n")
@@ -169,7 +170,10 @@ simulation.reporters.append(StateDataReporter(output_energy_stats,
                                               kineticEnergy=True,
                                               totalEnergy=True,
                                               temperature=True,
-                                              elapsedTime=True))
+                                              elapsedTime=True,
+                                              progress=True,
+                                              remainingTime=True,
+                                              totalSteps=args.steps))
 
 with open(output_displacement, "w") as dispout: 
     dispout.write("Step,Distance(nm),PeptideCenterCoordinate\n")
