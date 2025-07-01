@@ -105,9 +105,9 @@ for i, c in enumerate(modeller.topology.chains()):
 if args.suppress_movement: 
     hold_residues = []
     with open('hold.txt', 'r') as holdfile:
-    for line in holdfile:
-        splitline = line.strip().split()
-        hold_residues.extend([int(index) for index in splitline])
+        for line in holdfile:
+            splitline = line.strip().split()
+            hold_residues.extend([int(index) for index in splitline])
     log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
     for resnum, residue in enumerate(protein):
         if (resnum + 1) in hold_residues: 
