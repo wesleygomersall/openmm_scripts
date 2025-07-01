@@ -23,7 +23,7 @@ parser.add_argument("--pressure", type=float, default=1.0, help="Pressure (atmos
 parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelvin), default is 300K.")
 parser.add_argument("--pull-force", type=float, default=25.0, help="Pull force constant which will be applied to the peptide.")
 parser.add_argument("--add-water", action="store_true", help="Add this option to populate modeller with a surrounding box of water molecules.")
-parser.add_argument("--suppress_movement", action="store_true", help="Add this option to hold atoms in the protein chain in place throughout the simulation. If specified, program will look for file called 'hold.txt' containing residue numbers to hold stationary. 'hold.txt' should contain integer IDs separated by lines and/or spaces.") 
+parser.add_argument("--suppress-movement", action="store_true", help="Add this option to hold atoms in the protein chain in place throughout the simulation. If specified, program will look for file called 'hold.txt' containing residue numbers to hold stationary. 'hold.txt' should contain integer IDs separated by lines and/or spaces.") 
 args = parser.parse_args()
 
 def center_of_mass(pos, system, atoms): 
@@ -101,19 +101,6 @@ for i, c in enumerate(modeller.topology.chains()):
     if i == 0: protein = [res for res in c.residues()]
     else: peptide = [res for res in c.residues()]
 
-# optionally change mass of these atoms to 0 to suppress movement
-if args.suppress_movement: 
-    hold_residues = []
-    with open('hold.txt', 'r') as holdfile:
-        for line in holdfile:
-            splitline = line.strip().split()
-            hold_residues.extend([int(index) for index in splitline])
-    log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
-    for resnum, residue in enumerate(protein):
-        if (resnum + 1) in hold_residues: 
-            for atom in residue.atoms():
-                system.setParticleMass(int(atom.id), 0)
-
 log.write("Adding hydrogen atoms.\n")
 modeller.addHydrogens(forcefield)
 
@@ -129,8 +116,21 @@ if args.add_water:
 system = forcefield.createSystem(modeller.topology, 
                                  nonbondedMethod=app.PME, # changed from app.NoCutoff
                                  nonbondedCutoff=1*nanometer, 
-                                 removeCMMotion=False,
-                                 constraints=HBonds)
+                                 removeCMMotion=False)
+                                 # constraints=HBonds) # removed due to error with constraints involving zero-mass atoms
+
+# optionally change mass of these atoms to 0 to suppress movement
+if args.suppress_movement: 
+    hold_residues = []
+    with open('hold.txt', 'r') as holdfile:
+        for line in holdfile:
+            splitline = line.strip().split()
+            hold_residues.extend([int(index) for index in splitline])
+    log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
+    for resnum, residue in enumerate(protein):
+        if (resnum + 1) in hold_residues: 
+            for atom in residue.atoms():
+                system.setParticleMass(int(atom.id), 0)
 
 # Add custom force pulling on the peptide to the system
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
