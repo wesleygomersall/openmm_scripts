@@ -23,7 +23,7 @@ parser.add_argument("--pressure", type=float, default=1.0, help="Pressure (atmos
 parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelvin), default is 300K.")
 parser.add_argument("--pull-force", type=float, default=25.0, help="Pull force constant which will be applied to the peptide.")
 parser.add_argument("--add-water", action="store_true", help="Add this option to populate modeller with a surrounding box of water molecules.")
-parser.add_argument("--no-protein-move", action="store_true", help="Add this option to hold all atoms in the protein chain in place throughout the simulation.")
+parser.add_argument("--suppress_movement", action="store_true", help="Add this option to hold atoms in the protein chain in place throughout the simulation. If specified, program will look for file called 'hold.txt' containing residue numbers to hold stationary. 'hold.txt' should contain integer IDs separated by lines and/or spaces.") 
 args = parser.parse_args()
 
 def center_of_mass(pos, system, atoms): 
@@ -102,11 +102,17 @@ for i, c in enumerate(modeller.topology.chains()):
     else: peptide = [res for res in c.residues()]
 
 # optionally change mass of these atoms to 0 to suppress movement
-if args.no_protein_move: 
-    log.write("Setting mass of the first chain (protein chain) to zero to suppress motion.\n")
-    for residue in protein:
-        for atom in residue.atoms():
-            system.setParticleMass(int(atom.id), 0)
+if args.suppress_movement: 
+    hold_residues = []
+    with open('hold.txt', 'r') as holdfile:
+    for line in holdfile:
+        splitline = line.strip().split()
+        hold_residues.extend([int(index) for index in splitline])
+    log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
+    for resnum, residue in enumerate(protein):
+        if (resnum + 1) in hold_residues: 
+            for atom in residue.atoms():
+                system.setParticleMass(int(atom.id), 0)
 
 log.write("Adding hydrogen atoms.\n")
 modeller.addHydrogens(forcefield)
