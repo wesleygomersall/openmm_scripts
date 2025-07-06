@@ -167,7 +167,7 @@ log.write(f"Running sumulation, storing data every {store} iterations.\n")
 # Andrew imports a custom reporter from md_helper.py 
 # but it looks like he prints displacement to stdout for SMD.
 
-simulation.reporters.append(PDBReporter(output_pdb_path, store))
+simulation.reporters.append(PDBReporter(output_pdb_path, args.steps // 100)) # only store 100 frames
 simulation.reporters.append(StateDataReporter(output_energy_stats, 
                                               store, 
                                               step=True, 
