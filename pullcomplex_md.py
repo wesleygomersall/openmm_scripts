@@ -18,7 +18,7 @@ parser.add_argument("--input", type=str, help="Path to input pdb containing both
 parser.add_argument("--output", type=str, help="Path to output directory. Will be created if not already existing.")
 parser.add_argument("--timestep", type=float, default=2.0, help="Time between steps in femtoseconds, default is 2.")
 parser.add_argument("--steps", type=int, default=10_000, help="Total steps in simulation, default is ten thousand.")
-parser.add_argument("--freq", type=int, default=1_000, help="Frequency of reporter, will record data `freq` amount of times (every `step // freq` steps).")
+parser.add_argument("--freq", type=int, default=100, help="Frequency of reporter, will record data `freq` amount of times (every `step // freq` steps).")
 parser.add_argument("--pressure", type=float, default=1.0, help="Pressure (atmospheres), default is 1 atm.")
 parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelvin), default is 300K.")
 parser.add_argument("--pull-force", type=float, default=25.0, help="Pull force constant which will be applied to the peptide.")
@@ -114,7 +114,7 @@ if args.add_water:
 
 # create system needs to be after adding solvent and hydrogens
 system = forcefield.createSystem(modeller.topology, 
-                                 nonbondedMethod=app.PME, # changed from app.NoCutoff
+                                 nonbondedMethod=app.CutoffNonPeriodic, # changed from PME, previously changed from app.NoCutoff
                                  nonbondedCutoff=1*nanometer, 
                                  removeCMMotion=False)
                                  # constraints=HBonds) # removed due to error with constraints involving zero-mass atoms
@@ -143,6 +143,10 @@ integrator = LangevinIntegrator(temperature, 1/picosecond, tstep)
 simulation = Simulation(modeller.topology, system, integrator, openmm.Platform.getPlatformByName('CUDA'))
 simulation.context.setPositions(modeller.positions)
 
+log.write(f"Temperature (K): {temperature}\n")
+log.write(f"Pressure (atm): {pressure}\n")
+log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
+
 log.write("Calculating initial center of mass location.\n")
 t0_peptide_center = center_of_mass(
         modeller.positions,
@@ -151,9 +155,6 @@ t0_peptide_center = center_of_mass(
 
 log.write("Calculating initial potential energy\n")
 t0_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-
-log.write(f"Temperature: {temperature}\n")
-log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
 
 log.write(f"Initial potential energy: {t0_sim_energy}\n")
 simulation.minimizeEnergy()
