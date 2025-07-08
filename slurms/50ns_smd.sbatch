@@ -43,5 +43,5 @@ python3 ~/openmm_scripts/pullcomplex_md.py \
     --steps 25000000 \
     --freq 1000 \
     --add-water \
-    --pull-force $4 \
+    --pull-force $FORCE \
     --suppress-movement
