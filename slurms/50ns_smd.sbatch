@@ -14,28 +14,34 @@
 #SBATCH --mail-type=END
 #SBATCH --mail-user=wesg@uoregon.edu
 
+# Wesley Gomersall
+# Mon, 07 Jul 2025 19:52:05 -0700
+# Run 50ns long simulation with 1000 data entries, add explicit solvent, 
+#   suppress movement of residues specified in `hold.txt`.
 
-# TODO: 
-# take input file, output dir, outputname as command line arguments
+if [ $# != 4 ]; then
+    echo "Supply 4 arguments in the following order:"
+    echo "--input-pdb --output-dir --simulation-name --pull-force"
+    exit
+fi
 
 INPUTFILE=$1
 OUTPARENT=$2
 NAME=$3
+FORCE=$4
 
 source ~/miniforge3/etc/profile.d/conda.sh # for conda to work
 conda activate openMM
 
 module load cuda 
 
-OUTPUTDIR=$OUTPARENT/$(date +"%Y%m%dT%H%M%S")_$NAME
+OUTPUTDIR=$OUT_PARENT_DIR/$(date +"%Y%m%dT%H%M%S")_$NAME
 
-# this new script has a nonperiodic cutoff which will hopefully speed it up significantly 
-
-python3 ~/openmm_scripts/pullcomplex_md_nonperiodic.py \
+python3 ~/openmm_scripts/pullcomplex_md.py \
     --input $INPUTFILE \
     --output $OUTPUTDIR \
     --steps 25000000 \
     --freq 1000 \
     --add-water \
-    --pull-force 5 \
+    --pull-force $4 \
     --suppress-movement
