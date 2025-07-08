@@ -9,7 +9,7 @@
 # Triplicate of ComD-C16 and triplicate of ComD-alanines
 
 SCRIPT=/home/wesg/openmm_scripts/slurms/50ns_smd.sbatch
-OUTPUTDIR=/home/wesg/openmmscripts 
+OUTPUTDIR=/home/wesg/openmm_scripts 
 PULLFORCE=5
 
 sbatch $SCRIPT /home/wesg/proteinpdbs/ComD_C16_AF3_fixed.pdb $OUTPUTDIR c16_1 $PULLFORCE
