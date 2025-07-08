@@ -25,8 +25,8 @@ if [ $# != 4 ]; then
     exit
 fi
 
-INPUTFILE=$1
-OUTPARENT=$2
+INPUT_FILE=$1
+OUT_PARENT_DIR=$2
 NAME=$3
 FORCE=$4
 
@@ -35,11 +35,11 @@ conda activate openMM
 
 module load cuda 
 
-OUTPUTDIR=$OUT_PARENT_DIR/$(date +"%Y%m%dT%H%M%S")_$NAME
+OUTPUT_DIR=$OUT_PARENT_DIR/$(date +"%Y%m%dT%H%M%S")_$NAME
 
 python3 ~/openmm_scripts/pullcomplex_md.py \
-    --input $INPUTFILE \
-    --output $OUTPUTDIR \
+    --input $INPUT_FILE \
+    --output $OUTPUT_DIR \
     --steps 25000000 \
     --freq 1000 \
     --add-water \
