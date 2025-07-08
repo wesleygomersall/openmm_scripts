@@ -145,18 +145,15 @@ simulation.context.setPositions(modeller.positions)
 
 log.write(f"Temperature (K): {temperature}\n")
 log.write(f"Pressure (atm): {pressure}\n")
-log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
 
-log.write("Calculating initial center of mass location.\n")
 t0_peptide_center = center_of_mass(
         modeller.positions,
         system,
         [a for i in peptide for a in i.atoms()])
-
-log.write("Calculating initial potential energy\n")
 t0_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-
+log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
 log.write(f"Initial potential energy: {t0_sim_energy}\n")
+
 simulation.minimizeEnergy()
 minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 log.write(f"Potential energy after minimization: {minimized_sim_energy}\n")
