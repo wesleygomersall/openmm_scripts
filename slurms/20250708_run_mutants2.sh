@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Wesley Gomersall
+# Mon, 07 Jul 2025 21:28:11 -0700
+#
+# Launch slurm jobs on Talapas:
+# Run steered molecular dynamics openmm script
+# Triplicate of one PMPNN negative control and triplicate of some ComD-C16
+#   mutants from and inspired by Eckert et al. 2006. 
+#   Spaced out the jobs from run_mutants.sh
+
+SCRIPT=/home/wesg/openmm_scripts/slurms/50ns_smd.sbatch
+OUTPUTDIR=/home/wesg/openmm_scripts 
+PULLFORCE=5
+
+# sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/mpnn_neg_ctrl1_fixed.pdb $OUTPUTDIR pmpnn_1 $PULLFORCE
+# sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/mpnn_neg_ctrl1_fixed.pdb $OUTPUTDIR pmpnn_2 $PULLFORCE
+# sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/mpnn_neg_ctrl1_fixed.pdb $OUTPUTDIR pmpnn_3 $PULLFORCE
+
+# sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-12_fixed.pdb $OUTPUTDIR c16m12_1 $PULLFORCE
+# sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-12_fixed.pdb $OUTPUTDIR c16m12_2 $PULLFORCE
+# sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-12_fixed.pdb $OUTPUTDIR c16m12_3 $PULLFORCE
+
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-13_fixed.pdb $OUTPUTDIR c16m13_1 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-13_fixed.pdb $OUTPUTDIR c16m13_2 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-13_fixed.pdb $OUTPUTDIR c16m13_3 $PULLFORCE
+
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-14_fixed.pdb $OUTPUTDIR c16m14_1 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-14_fixed.pdb $OUTPUTDIR c16m14_2 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-14_fixed.pdb $OUTPUTDIR c16m14_3 $PULLFORCE
+
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-15_fixed.pdb $OUTPUTDIR c16m15_1 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-15_fixed.pdb $OUTPUTDIR c16m15_2 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-15_fixed.pdb $OUTPUTDIR c16m15_3 $PULLFORCE

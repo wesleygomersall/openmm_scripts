@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Wesley Gomersall
-# Mon, 07 Jul 2025 19:21:29 -0700
 # Mon, 07 Jul 2025 20:32:35 -0700
 #
 # Launch slurm jobs on Talapas:
