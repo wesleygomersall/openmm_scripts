@@ -8,11 +8,6 @@ from sys import stdout
 import argparse
 import numpy as np
 
-# previously imported from params
-# steps = 1_000_000
-# store = steps / 100
-# k = 300 # for force calculations
-
 parser = argparse.ArgumentParser(description="MD trajectory simulating constant force pulling apart a protein-peptide complex.")
 parser.add_argument("--input", type=str, help="Path to input pdb containing both protein and peptide. If errors exist, try using PDBfixer first.")
 parser.add_argument("--output", type=str, help="Path to output directory. Will be created if not already existing.")
@@ -56,6 +51,10 @@ def custom_force(atoms, force_constant):
         openmm.CustomCentroidBondForce object
     '''
     force_constant *= kilocalories_per_mole / angstroms
+
+    # TODO: 
+    # apply pull force along the axis connecting the centers of mass
+    # fx, fy, fz = center_of_mass(peptide) - center_of_mass(protein)
 
     fx = 0.0
     fy = 0.0
