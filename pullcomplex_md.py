@@ -71,10 +71,8 @@ if not os.path.exists(args.output):
     os.mkdir(args.output)
 
 tstep = args.timestep * femtoseconds
-# Noora suggested 1.0*picoseconds step size
 pressure = args.pressure * atmosphere
 temperature = args.temp * kelvin
-# freq = 1000 # store data `freq` times depending on total steps 
 store = args.steps // args.freq
 output_log_path = args.output + "/log.txt"
 output_pdb_path = args.output + "/output.pdb"
@@ -100,7 +98,7 @@ for i, c in enumerate(modeller.topology.chains()):
 log.write("Adding hydrogen atoms.\n")
 modeller.addHydrogens(forcefield)
 
-# Optionally add water as solvent
+# Optionally explicit water solvent
 if args.add_water: 
     log.write("Adding solvent: water\n")
     modeller.addSolvent(forcefield, model='tip3p', 
@@ -115,7 +113,10 @@ system = forcefield.createSystem(modeller.topology,
                                  removeCMMotion=False)
                                  # constraints=HBonds) # removed due to error with constraints involving zero-mass atoms
 
-# optionally change mass of these atoms to 0 to suppress movement
+# Optionally change mass of some residues' atoms to 0 to suppress movement
+# Warning: 
+#   This was causing N-terminal nitrogen atom of peptide to also remain locked 
+#   in place. Mass of that atom had not been set to zero.  
 if args.suppress_movement: 
     hold_residues = []
     with open('hold.txt', 'r') as holdfile:
@@ -126,7 +127,19 @@ if args.suppress_movement:
     for resnum, residue in enumerate(protein):
         if (resnum + 1) in hold_residues: 
             for atom in residue.atoms():
+                print(atom)
                 system.setParticleMass(int(atom.id), 0)
+
+'''
+for r in protein: 
+    for a in r.atoms(): 
+        print(a)
+        print(system.getParticleMass(int(a.id)))
+for r in peptide: 
+    for a in r.atoms(): 
+        print(a)
+        print(system.getParticleMass(int(a.id)))
+'''
 
 t0_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
