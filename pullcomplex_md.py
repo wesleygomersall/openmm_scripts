@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# TODO:
+# Use RMSDForce to calculate RMSD for each step from recording interval
+
 from openmm.app import *
 from openmm import *
 from openmm.unit import *
@@ -78,6 +81,7 @@ output_log_path = args.output + "/log.txt"
 output_pdb_path = args.output + "/output.pdb"
 output_energy_stats = args.output + "/stats.csv"
 output_displacement = args.output + "/displacement.csv"
+output_intradistance = args.output + "/intra-peptide_distance.csv"
 
 log = open(output_log_path, 'w') # write run info to this log rather than stdout
 
@@ -93,7 +97,19 @@ if len(list(modeller.topology.chains())) != 2:
     
 for i, c in enumerate(modeller.topology.chains()):
     if i == 0: protein = [res for res in c.residues()]
-    else: peptide = [res for res in c.residues()]
+    if i == 1: peptide = [res for res in c.residues()]
+
+# For tracking peptide stability, get the second and the second-to-last alpha carbon ids
+CA_1_id, CA_2_id = 0, 0
+for resnum, res in enumerate(peptide): 
+    if resnum == 1:
+        for atom in res.atoms(): 
+            if atom.name == 'CA': 
+                CA_1_id = atom.index
+    if resnum == len(peptide) - 2:
+        for atom in res.atoms(): 
+            if atom.name == 'CA': 
+                CA_2_id = atom.index
 
 log.write("Adding hydrogen atoms.\n")
 modeller.addHydrogens(forcefield)
@@ -191,18 +207,26 @@ simulation.reporters.append(StateDataReporter(output_energy_stats,
                                               remainingTime=True,
                                               totalSteps=args.steps))
 
-with open(output_displacement, "w") as dispout: 
+with open(output_displacement, "w") as dispout, open(output_intradistance, "w") as intraout: 
     dispout.write("Step,Distance(nm),PeptideCenterCoordinate\n")
+    intraout.write("Step,DistanceBetweenAlphaCarbons(nm)\n")
     for step in range(args.steps):
         simulation.step(1)
+        
+        # calculate peptide's center of mass displacement
         peptide_center = center_of_mass(
                 simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
                 simulation.context.getSystem(),
                 [a for i in peptide for a in i.atoms()])
-        # distance = peptide_center - t0_peptide_center
-        distance = np.linalg.norm(peptide_center - t0_peptide_center)
+        displacement = np.linalg.norm(peptide_center - t0_peptide_center)
+        
+        # calculate aCarbon-aCarbon distance using previously fetched ids
+        positions = simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
+        intra_distance = np.linalg.norm(positions[0][CA_1_id] - positions[0][CA_2_id])
+
         if (step + 1) % store == 0: 
-            dispout.write(f"{step+1},{distance},{peptide_center}\n")
+            dispout.write(f"{step+1},{displacement},{peptide_center}\n")
+            intraout.write(f"{step+1},{intra_distance}\n")
 
 # Before using the above loop I used this to advance the steps 
 # simulation.step(args.steps)
