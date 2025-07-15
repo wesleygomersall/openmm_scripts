@@ -20,7 +20,14 @@ sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/mpnn_neg_ctrl1_fixed.pdb $OUTPU
 sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/mpnn_neg_ctrl1_fixed.pdb $OUTPUTDIR pmpnn_2 $PULLFORCE
 sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/mpnn_neg_ctrl1_fixed.pdb $OUTPUTDIR pmpnn_3 $PULLFORCE
 
-# Put these in the next script:
-# /home/wesg/proteinpdbs/Eckert2006/eckertC16-14_fixed.pdb
-# /home/wesg/proteinpdbs/Eckert2006/eckertC16-15_fixed.pdb
-# /home/wesg/proteinpdbs/Eckert2006/eckertC16-13_fixed.pdb
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-13_fixed.pdb $OUTPUTDIR c16m13_1 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-13_fixed.pdb $OUTPUTDIR c16m13_2 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-13_fixed.pdb $OUTPUTDIR c16m13_3 $PULLFORCE
+
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-14_fixed.pdb $OUTPUTDIR c16m14_1 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-14_fixed.pdb $OUTPUTDIR c16m14_2 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-14_fixed.pdb $OUTPUTDIR c16m14_3 $PULLFORCE
+
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-15_fixed.pdb $OUTPUTDIR c16m15_1 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-15_fixed.pdb $OUTPUTDIR c16m15_2 $PULLFORCE
+sbatch $SCRIPT /home/wesg/proteinpdbs/Eckert2006/eckertC16-15_fixed.pdb $OUTPUTDIR c16m15_3 $PULLFORCE
