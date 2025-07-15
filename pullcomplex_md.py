@@ -39,11 +39,12 @@ def center_of_mass(pos, system, atoms):
     center_of_mass = sum([m * pos[i.index] for i, m in zip(atoms, masses)]) / masses.sum()
     return center_of_mass
 
-def custom_force(atoms, force_constant):
+def custom_force(direction, atoms, force_constant):
     '''
     Define custom force pulling on a group of atoms
 
     Input(s): 
+        direction (list):       (x, y, z) vector for direction of force.
         atoms (str):            List of atoms ids to apply force to.
         f_constant (float):     Constant force * kcal/mole/A
 
@@ -52,13 +53,9 @@ def custom_force(atoms, force_constant):
     '''
     force_constant *= kilocalories_per_mole / angstroms
 
-    # TODO: 
-    # apply pull force along the axis connecting the centers of mass
-    # fx, fy, fz = center_of_mass(peptide) - center_of_mass(protein)
-
-    fx = 0.0
-    fy = 0.0
-    fz = -1.0 # apply force in the z direction only
+    fx = direction[0]
+    fy = direction[1]
+    fz = direction[2]
 
     pull = CustomCentroidBondForce(1, "force_constant * (x1*fx + y1*fy + z1*fz)")
     pull.addGlobalParameter("force_constant", force_constant)
@@ -131,11 +128,20 @@ if args.suppress_movement:
             for atom in residue.atoms():
                 system.setParticleMass(int(atom.id), 0)
 
+t0_protein_center = center_of_mass(modeller.positions, system,
+        [a for i in protein for a in i.atoms()])
+t0_peptide_center = center_of_mass(modeller.positions, system,
+        [a for i in peptide for a in i.atoms()])
+log.write(f"Initial protein center of mass: {t0_protein_center}\n")
+log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
+
+pull_direction = -1 * t0_protein_center - t0_peptide_center
+
 # Add custom force pulling on the peptide to the system
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
-log.write(f"Pull force constant: {args.pull_force}\n")
-pullforce = custom_force(peptide_atoms, args.pull_force)
+pullforce = custom_force(pull_direction, peptide_atoms, args.pull_force)
 system.addForce(pullforce)
+log.write(f"Pull force {args.pull_force} kcal/mole/Angstrom added in {pull_direction} direction.")
 
 integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
 
@@ -144,13 +150,7 @@ simulation.context.setPositions(modeller.positions)
 
 log.write(f"Temperature (K): {temperature}\n")
 log.write(f"Pressure (atm): {pressure}\n")
-
-t0_peptide_center = center_of_mass(
-        modeller.positions,
-        system,
-        [a for i in peptide for a in i.atoms()])
 t0_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
 log.write(f"Initial potential energy: {t0_sim_energy}\n")
 
 simulation.minimizeEnergy()
