@@ -188,7 +188,7 @@ log.write(f"Potential energy after minimization: {minimized_sim_energy}\n")
 
 log.write(f"Running simulation for {args.steps} steps.\n")
 log.write(f"Time step: {tstep}\n")
-log.write(f"Running sumulation, storing data every {store} iterations.\n")
+log.write(f"Running simulation, storing data every {store} iterations.\n")
 
 # Andrew imports a custom reporter from md_helper.py 
 # but it looks like he prints displacement to stdout for SMD.
