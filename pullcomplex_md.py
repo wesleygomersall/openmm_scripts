@@ -124,38 +124,34 @@ if args.add_water:
 
 # create system needs to be after adding solvent and hydrogens
 system = forcefield.createSystem(modeller.topology, 
-                                 nonbondedMethod=app.CutoffNonPeriodic, # changed from PME, previously changed from app.NoCutoff
+                                 nonbondedMethod=PME, # previously changed from app.NoCutoff, also tried app.CutoffNonPeriodic
                                  nonbondedCutoff=1*nanometer, 
-                                 removeCMMotion=False)
-                                 # constraints=HBonds) # removed due to error with constraints involving zero-mass atoms
+                                 removeCMMotion=False,
+                                 constraints=HBonds) # remove this line if error with constraints involving zero-mass atoms
 
 # Optionally change mass of some residues' atoms to 0 to suppress movement
 # Warning: 
 #   This was causing N-terminal nitrogen atom of peptide to also remain locked 
 #   in place. Mass of that atom had not been set to zero.  
-if args.suppress_movement: 
-    hold_residues = []
-    with open('hold.txt', 'r') as holdfile:
-        for line in holdfile:
-            splitline = line.strip().split()
-            hold_residues.extend([int(index) for index in splitline])
-    log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
-    for resnum, residue in enumerate(protein):
-        if (resnum + 1) in hold_residues: 
-            for atom in residue.atoms():
-                print(atom)
-                system.setParticleMass(int(atom.id), 0)
+#
+# if args.suppress_movement: 
+#    hold_residues = []
+#    with open('hold.txt', 'r') as holdfile:
+#        for line in holdfile:
+#            splitline = line.strip().split()
+#            hold_residues.extend([int(index) for index in splitline])
+#    log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
+#    for resnum, residue in enumerate(protein):
+#        if (resnum + 1) in hold_residues: 
+#            for atom in residue.atoms():
+#                print(atom)
+#                system.setParticleMass(int(atom.id), 0)
 
-'''
-for r in protein: 
-    for a in r.atoms(): 
-        print(a)
-        print(system.getParticleMass(int(a.id)))
-for r in peptide: 
-    for a in r.atoms(): 
-        print(a)
-        print(system.getParticleMass(int(a.id)))
-'''
+# Debug suppress movement
+# for r in protein: 
+#     for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
+# for r in peptide: 
+#     for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
 
 t0_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
@@ -213,18 +209,18 @@ with open(output_displacement, "w") as dispout, open(output_intradistance, "w") 
     for step in range(args.steps):
         simulation.step(1)
         
-        # calculate peptide's center of mass displacement
-        peptide_center = center_of_mass(
-                simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
-                simulation.context.getSystem(),
-                [a for i in peptide for a in i.atoms()])
-        displacement = np.linalg.norm(peptide_center - t0_peptide_center)
-        
-        # calculate aCarbon-aCarbon distance using previously fetched ids
-        positions = simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
-        intra_distance = np.linalg.norm(positions[0][CA_1_id] - positions[0][CA_2_id])
-
         if (step + 1) % store == 0: 
+            # calculate peptide's center of mass displacement
+            peptide_center = center_of_mass(
+                    simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
+                    simulation.context.getSystem(), 
+                    [a for i in peptide for a in i.atoms()])
+            displacement = np.linalg.norm(peptide_center - t0_peptide_center)
+        
+            # calculate aCarbon-aCarbon distance using previously fetched ids
+            positions = simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
+            intra_distance = np.linalg.norm(positions[0][CA_1_id] - positions[0][CA_2_id])
+
             dispout.write(f"{step+1},{displacement},{peptide_center}\n")
             intraout.write(f"{step+1},{intra_distance}\n")
 
