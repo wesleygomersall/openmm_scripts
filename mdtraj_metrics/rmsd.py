@@ -2,15 +2,28 @@
 
 from tools import *
 
+def peptide_rmsd(trajectory): 
+    '''
+    Calculate RMSD of peptide chain ("chainid == 1") for each frame of
+    trajectory, using the first frame as reference. 
+    
+    Input: 
+        mdtraj Trajectory object
+    Output: 
+        List: RMSD values, length = trajectory.n_frames
+    '''
+    peptide_atomids = trajectory.topology.select("chainid == 1")
+    peprmsd = md.rmsd(trajectory, trajectory, 0, peptide_atomids)
+    return peprmsd
+
 if __name__ == "__main__":
-    mytraj = SmdTrajectory(args.input)
-    myref = Reference(args.ref, mytraj)
+    mytraj = md.load(args.input).remove_solvent()
+    mytraj = prepend_reference(mytraj, md.load(args.ref))
+    
+    prmsd = peptide_rmsd(mytraj)
 
-    # Calculate RMSD for each frame, using the 0th (from ref) as reference
-    peptide_rmsd = md.rmsd(mytraj.trajectory, myref.ref, 0, mytraj.peptide_atomids)
-
-    # Create csv with columns: Frame, RMSD
-    with open(args.output.split('.csv')[0] + ".csv", 'w') as out: 
-        out.write("Frame,RMSD(nm)\n")
-        for i, frame_rmsd in enumerate(peptide_rmsd): 
-            out.write(f"{i+1},{frame_rmsd}\n")
+    for i, p in enumerate(prmsd):
+        if i == 0: args.output.write("Step,RMSD(nm)\n")
+        args.output.write(f"{i},{p}\n")
+    
+    args.output.close()
