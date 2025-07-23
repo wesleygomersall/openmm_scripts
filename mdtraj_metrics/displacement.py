@@ -14,7 +14,7 @@ def peptide_displacement(trajectory):
     Output: 
         tuple: List of center of mass coordinates, List of displacement scalars
     '''
-    com = md.compute_center_of_mass(mytraj, select="chainid == 1")
+    com = md.compute_center_of_mass(trajectory, select="chainid == 1")
     displacement = [np.linalg.norm(np.subtract(c, com[0])) for c in com]
     return com, displacement
 
