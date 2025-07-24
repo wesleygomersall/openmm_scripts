@@ -8,32 +8,32 @@ time = 50 # in nanoseconds
 frames = 100 # 100 frames of pdb
 
 
-c16ala_files = [["/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_1/mdtrajanalysis.csv",
-                 "/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_2/mdtrajanalysis.csv",
-                 "/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_3/mdtrajanalysis.csv"],
-                ["/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_1/mdtrajanalysis.csv",
-                 "/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_2/mdtrajanalysis.csv",
-                 "/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_3/mdtrajanalysis.csv"],
-                ["/Users/wesg/Downloads/20250707_SMD/20250707T215351_pmpnn_1/mdtrajanalysis.csv",
-                 "/Users/wesg/Downloads/20250707_SMD/20250707T215351_pmpnn_2/mdtrajanalysis.csv",
-                 "/Users/wesg/Downloads/20250707_SMD/20250707T215351_pmpnn_3/mdtrajanalysis.csv"]]
+c16ala_files = [["20250707T205103_ala_1/mdtrajanalysis.csv",
+                 "20250707T205103_ala_2/mdtrajanalysis.csv",
+                 "20250707T205103_ala_3/mdtrajanalysis.csv"],
+                ["20250707T205103_c16_1/mdtrajanalysis.csv",
+                 "20250707T205103_c16_2/mdtrajanalysis.csv",
+                 "20250707T205103_c16_3/mdtrajanalysis.csv"],
+                ["20250707T215351_pmpnn_1/mdtrajanalysis.csv",
+                 "20250707T215351_pmpnn_2/mdtrajanalysis.csv",
+                 "20250707T215351_pmpnn_3/mdtrajanalysis.csv"]]
 c16ala_colors = ["red", "blue", "yellow"]
 c16ala_labels = ["Alanines", "C16", "PMPNN"]
 assert len(c16ala_files) == len(c16ala_colors) == len(c16ala_labels)
 
 
-myfiles = [["/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_1/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_2/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_3/mdtrajanalysis.csv"],
-           ["/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m13_1/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m13_2/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m13_3/mdtrajanalysis.csv"],
-           ["/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m14_1/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m14_2/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m14_3/mdtrajanalysis.csv"],
-           ["/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m15_1/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m15_2/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m15_3/mdtrajanalysis.csv"]]
+myfiles = [["20250707T215351_c16m12_1/mdtrajanalysis.csv",
+            "20250707T215351_c16m12_2/mdtrajanalysis.csv",
+            "20250707T215351_c16m12_3/mdtrajanalysis.csv"],
+           ["20250708T133217_c16m13_1/mdtrajanalysis.csv",
+            "20250708T133217_c16m13_2/mdtrajanalysis.csv",
+            "20250708T133217_c16m13_3/mdtrajanalysis.csv"],
+           ["20250708T133217_c16m14_1/mdtrajanalysis.csv",
+            "20250708T133217_c16m14_2/mdtrajanalysis.csv",
+            "20250708T133217_c16m14_3/mdtrajanalysis.csv"],
+           ["20250708T133217_c16m15_1/mdtrajanalysis.csv",
+            "20250708T133217_c16m15_2/mdtrajanalysis.csv",
+            "20250708T133217_c16m15_3/mdtrajanalysis.csv"]]
 mycolors = ["green", "yellow", "black", "orange", "purple"]
 mylabels = ["C16 mutant 12", "negative", "C16 mutant 13", "C16 mutant 14", "C16 mutant 15"]
 assert len(myfiles) == len(mycolors) == len(mylabels)
