@@ -14,7 +14,7 @@ if __name__ == "__main__":
     acdist = acarbon_distances(mytraj)
 
     for i in range(mytraj.n_frames):
-        if i == 0: args.output.write("Step,Displacement(nm),RMSD(nm),aCarbon-aCarbon Distance(nm)\n")
+        if i == 0: args.output.write("Frame,Displacement(nm),RMSD(nm),aCarbon-aCarbon Distance(nm)\n")
         args.output.write(f"{i},{disp[i]},{prmsd[i]},{acdist[i]}\n")
     
     args.output.close()

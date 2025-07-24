@@ -23,7 +23,7 @@ if __name__ == "__main__":
     prmsd = peptide_rmsd(mytraj)
 
     for i, p in enumerate(prmsd):
-        if i == 0: args.output.write("Step,RMSD(nm)\n")
+        if i == 0: args.output.write("Frame,RMSD(nm)\n")
         args.output.write(f"{i},{p}\n")
     
     args.output.close()

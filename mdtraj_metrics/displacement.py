@@ -25,7 +25,7 @@ if __name__ == "__main__":
     coords, disp = peptide_displacement(mytraj)
 
     for i in range(len(coords)):
-        if i == 0: args.output.write("Step,Displacement(nm),Coordinates\n")
+        if i == 0: args.output.write("Frame,Displacement(nm),Coordinates\n")
         args.output.write(f"{i},{disp[i]},{coords[i]}\n")
 
     args.output.close()

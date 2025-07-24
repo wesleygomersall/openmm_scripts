@@ -6,7 +6,6 @@ from tools import *
 
 def acarbon_distances(trajectory): 
     '''
-    ************************WIP************************
     Calculate the distance between the second and the second to last alpha carbons of the peptide chain ("chainid == 1"). 
 
     Input: 
@@ -33,7 +32,7 @@ if __name__ == "__main__":
     acac_dist = acarbon_distances(mytraj)
     
     for i in range(len(acac_dist)):
-        if i == 0: args.output.write("Step,aCarbon-aCarbon Distance(nm)\n")
+        if i == 0: args.output.write("Frame,aCarbon-aCarbon Distance(nm)\n")
         args.output.write(f"{i},{acac_dist[i]}\n")
 
     args.output.close()
