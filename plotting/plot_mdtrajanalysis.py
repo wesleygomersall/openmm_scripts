@@ -7,13 +7,19 @@ totalsteps = 25_000_000
 time = 50 # in nanoseconds
 frames = 100 # 100 frames of pdb
 
-myfiles = [["/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_1/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_2/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_3/mdtrajanalysis.csv"],
-           ["/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_1/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_2/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_3/mdtrajanalysis.csv"],
-           ["/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_1/mdtrajanalysis.csv",
+
+c16ala_files = [["/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_1/mdtrajanalysis.csv",
+                 "/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_2/mdtrajanalysis.csv",
+                 "/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_3/mdtrajanalysis.csv"],
+                ["/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_1/mdtrajanalysis.csv",
+                 "/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_2/mdtrajanalysis.csv",
+                 "/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_3/mdtrajanalysis.csv"]]
+c16ala_colors = ["red", "blue"]
+c16ala_labels = ["Alanines", "C16"]
+assert len(c16ala_files) == len(c16ala_colors) == len(c16ala_labels)
+
+
+myfiles = [["/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_1/mdtrajanalysis.csv",
             "/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_2/mdtrajanalysis.csv",
             "/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_3/mdtrajanalysis.csv"],
            ["/Users/wesg/Downloads/20250707_SMD/20250707T215351_pmpnn_1/mdtrajanalysis.csv",
@@ -28,12 +34,13 @@ myfiles = [["/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_1/mdtrajanal
            ["/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m15_1/mdtrajanalysis.csv",
             "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m15_2/mdtrajanalysis.csv",
             "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m15_3/mdtrajanalysis.csv"]]
-mycolors = ["red", "blue", "green", "yellow", "black", "orange", "purple"]
-mylabels = ["Alanines", "C16", "C16 mutant 12", "PMPNN negative", "C16 mutant 13", "C16 mutant 14", "C16 mutant 15"]
+mycolors = ["green", "yellow", "black", "orange", "purple"]
+mylabels = ["C16 mutant 12", "PMPNN negative", "C16 mutant 13", "C16 mutant 14", "C16 mutant 15"]
 assert len(myfiles) == len(mycolors) == len(mylabels)
 
 
-def plot_simulation(files: list, colors: list, labels: list, graph_type: str): 
+def plot_simulation(files: list, colors: list, labels: list, 
+                    graph_type: str, optional_label: str = ""): 
     plt.clf() # clear figure from any previous plotting
     xaxis = 'Frame'
     xlabel = 'Time (ns)'
@@ -67,11 +74,16 @@ def plot_simulation(files: list, colors: list, labels: list, graph_type: str):
     plt.title(title)
     plt.legend()
     plt.grid(False)
-    output_path = "comparison_" + graph_type + ".pdf" 
+    if optional_label != "": optional_label = optional_label + "_"
+    output_path = f"{optional_label}comparison_{graph_type}.pdf" 
     plt.savefig(output_path, format="pdf")
 
 
 if __name__ == "__main__":
-    plot_simulation(myfiles, mycolors, mylabels, "displacement")
-    plot_simulation(myfiles, mycolors, mylabels, "rmsd")
-    plot_simulation(myfiles, mycolors, mylabels, "a-carbons")
+    plot_simulation(myfiles, mycolors, mylabels, "displacement", "mutants")
+    plot_simulation(myfiles, mycolors, mylabels, "rmsd", "mutants")
+    plot_simulation(myfiles, mycolors, mylabels, "a-carbons", "mutants")
+
+    plot_simulation(c16ala_files, c16ala_colors, c16ala_labels, "displacement", "c16ala")
+    plot_simulation(c16ala_files, c16ala_colors, c16ala_labels, "rmsd", "c16ala")
+    plot_simulation(c16ala_files, c16ala_colors, c16ala_labels, "a-carbons", "c16ala")
