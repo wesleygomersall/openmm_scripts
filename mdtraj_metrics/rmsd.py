@@ -4,7 +4,7 @@ from tools import *
 
 def peptide_rmsd(trajectory): 
     '''
-    Calculate RMSD of peptide chain ("chainid == 1") for each frame of
+    Calculate backbone RMSD of peptide chain ("chainid == 1") for each frame of
     trajectory, using the first frame as reference. 
     
     Input: 
@@ -12,8 +12,8 @@ def peptide_rmsd(trajectory):
     Output: 
         List: RMSD values, length = trajectory.n_frames
     '''
-    peptide_atomids = trajectory.topology.select("chainid == 1")
-    peprmsd = md.rmsd(trajectory, trajectory, 0, peptide_atomids)
+    peptide_bb_atomids = trajectory.topology.select("(chainid == 1) and backbone")
+    peprmsd = md.rmsd(trajectory, trajectory, 0, peptide_bb_atomids)
     return peprmsd
 
 if __name__ == "__main__":
