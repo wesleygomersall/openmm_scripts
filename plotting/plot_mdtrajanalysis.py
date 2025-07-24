@@ -13,18 +13,18 @@ c16ala_files = [["/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_1/mdtra
                  "/Users/wesg/Downloads/20250707_SMD/20250707T205103_ala_3/mdtrajanalysis.csv"],
                 ["/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_1/mdtrajanalysis.csv",
                  "/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_2/mdtrajanalysis.csv",
-                 "/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_3/mdtrajanalysis.csv"]]
-c16ala_colors = ["red", "blue"]
-c16ala_labels = ["Alanines", "C16"]
+                 "/Users/wesg/Downloads/20250707_SMD/20250707T205103_c16_3/mdtrajanalysis.csv"],
+                ["/Users/wesg/Downloads/20250707_SMD/20250707T215351_pmpnn_1/mdtrajanalysis.csv",
+                 "/Users/wesg/Downloads/20250707_SMD/20250707T215351_pmpnn_2/mdtrajanalysis.csv",
+                 "/Users/wesg/Downloads/20250707_SMD/20250707T215351_pmpnn_3/mdtrajanalysis.csv"]]
+c16ala_colors = ["red", "blue", "yellow"]
+c16ala_labels = ["Alanines", "C16", "PMPNN"]
 assert len(c16ala_files) == len(c16ala_colors) == len(c16ala_labels)
 
 
 myfiles = [["/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_1/mdtrajanalysis.csv",
             "/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_2/mdtrajanalysis.csv",
             "/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_3/mdtrajanalysis.csv"],
-           ["/Users/wesg/Downloads/20250707_SMD/20250707T215351_pmpnn_1/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250707T215351_pmpnn_2/mdtrajanalysis.csv",
-            "/Users/wesg/Downloads/20250707_SMD/20250707T215351_pmpnn_3/mdtrajanalysis.csv"],
            ["/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m13_1/mdtrajanalysis.csv",
             "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m13_2/mdtrajanalysis.csv",
             "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m13_3/mdtrajanalysis.csv"],
@@ -35,7 +35,7 @@ myfiles = [["/Users/wesg/Downloads/20250707_SMD/20250707T215351_c16m12_1/mdtraja
             "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m15_2/mdtrajanalysis.csv",
             "/Users/wesg/Downloads/20250707_SMD/20250708T133217_c16m15_3/mdtrajanalysis.csv"]]
 mycolors = ["green", "yellow", "black", "orange", "purple"]
-mylabels = ["C16 mutant 12", "PMPNN negative", "C16 mutant 13", "C16 mutant 14", "C16 mutant 15"]
+mylabels = ["C16 mutant 12", "negative", "C16 mutant 13", "C16 mutant 14", "C16 mutant 15"]
 assert len(myfiles) == len(mycolors) == len(mylabels)
 
 
@@ -78,12 +78,11 @@ def plot_simulation(files: list, colors: list, labels: list,
     output_path = f"{optional_label}comparison_{graph_type}.pdf" 
     plt.savefig(output_path, format="pdf")
 
+def plot_all(files: list, colors: list, labels: list,  optional_label: str = ""): 
+    plot_simulation(files, colors, labels, "displacement", optional_label)
+    plot_simulation(files, colors, labels, "rmsd", optional_label)
+    plot_simulation(files, colors, labels, "a-carbons", optional_label)
 
 if __name__ == "__main__":
-    plot_simulation(myfiles, mycolors, mylabels, "displacement", "mutants")
-    plot_simulation(myfiles, mycolors, mylabels, "rmsd", "mutants")
-    plot_simulation(myfiles, mycolors, mylabels, "a-carbons", "mutants")
-
-    plot_simulation(c16ala_files, c16ala_colors, c16ala_labels, "displacement", "c16ala")
-    plot_simulation(c16ala_files, c16ala_colors, c16ala_labels, "rmsd", "c16ala")
-    plot_simulation(c16ala_files, c16ala_colors, c16ala_labels, "a-carbons", "c16ala")
+    plot_all(myfiles, mycolors, mylabels, "mutants")
+    plot_all(c16ala_files, c16ala_colors, c16ala_labels, "c16ala")
