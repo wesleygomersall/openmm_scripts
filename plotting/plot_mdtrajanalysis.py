@@ -34,8 +34,8 @@ myfiles = [["20250707T215351_c16m12_1/mdtrajanalysis.csv",
            ["20250708T133217_c16m15_1/mdtrajanalysis.csv",
             "20250708T133217_c16m15_2/mdtrajanalysis.csv",
             "20250708T133217_c16m15_3/mdtrajanalysis.csv"]]
-mycolors = ["green", "yellow", "black", "orange", "purple"]
-mylabels = ["C16 mutant 12", "negative", "C16 mutant 13", "C16 mutant 14", "C16 mutant 15"]
+mycolors = ["green", "black", "orange", "purple"]
+mylabels = ["C16 mutant 12", "C16 mutant 13", "C16 mutant 14", "C16 mutant 15"]
 assert len(myfiles) == len(mycolors) == len(mylabels)
 
 
