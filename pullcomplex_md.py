@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 
-# TODO:
-# Use RMSDForce to calculate RMSD for each step from recording interval
-
 from openmm.app import *
 from openmm import *
 from openmm.unit import *
@@ -79,9 +76,7 @@ temperature = args.temp * kelvin
 store = args.steps // args.freq
 output_log_path = args.output + "/log.txt"
 output_pdb_path = args.output + "/output.pdb"
-output_energy_stats = args.output + "/stats.csv"
-output_displacement = args.output + "/displacement.csv"
-output_intradistance = args.output + "/intra-peptide_distance.csv"
+output_energy = args.output + "/energy.csv"
 
 log = open(output_log_path, 'w') # write run info to this log rather than stdout
 
@@ -124,7 +119,7 @@ if args.add_water:
 
 # create system needs to be after adding solvent and hydrogens
 system = forcefield.createSystem(modeller.topology, 
-                                 nonbondedMethod=PME, # previously changed from app.NoCutoff, also tried app.CutoffNonPeriodic
+                                 nonbondedMethod=PME, 
                                  nonbondedCutoff=1*nanometer, 
                                  removeCMMotion=False,
                                  constraints=HBonds) # remove this line if error with constraints involving zero-mass atoms
@@ -133,25 +128,24 @@ system = forcefield.createSystem(modeller.topology,
 # Warning: 
 #   This was causing N-terminal nitrogen atom of peptide to also remain locked 
 #   in place. Mass of that atom had not been set to zero.  
-#
-# if args.suppress_movement: 
-#    hold_residues = []
-#    with open('hold.txt', 'r') as holdfile:
-#        for line in holdfile:
-#            splitline = line.strip().split()
-#            hold_residues.extend([int(index) for index in splitline])
-#    log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
-#    for resnum, residue in enumerate(protein):
-#        if (resnum + 1) in hold_residues: 
-#            for atom in residue.atoms():
-#                print(atom)
-#                system.setParticleMass(int(atom.id), 0)
 
-# Debug suppress movement
-# for r in protein: 
-#     for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
-# for r in peptide: 
-#     for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
+# if args.suppress_movement: 
+#     hold_residues = []
+#     with open('hold.txt', 'r') as holdfile:
+#         for line in holdfile:
+#             splitline = line.strip().split()
+#             hold_residues.extend([int(index) for index in splitline])
+#     log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
+#     for resnum, residue in enumerate(protein):
+#         if (resnum + 1) in hold_residues: 
+#             for atom in residue.atoms():
+#                 print(atom)
+#                 system.setParticleMass(int(atom.id), 0)
+#     # Debug suppress movement
+#     for r in protein: 
+#         for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
+#     for r in peptide: 
+#         for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
 
 t0_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
@@ -160,10 +154,10 @@ t0_peptide_center = center_of_mass(modeller.positions, system,
 log.write(f"Initial protein center of mass: {t0_protein_center}\n")
 log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
 
-pull_direction = -1 * t0_protein_center - t0_peptide_center
-
 # Add custom force pulling on the peptide to the system
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
+pull_direction = t0_peptide_center - t0_protein_center
+pull_direction = pull_direction / np.linalg.norm(pull_direction) # make unit vector
 pullforce = custom_force(pull_direction, peptide_atoms, args.pull_force)
 system.addForce(pullforce)
 log.write(f"Pull force {args.pull_force} kcal/mole/Angstrom added in {pull_direction} direction.")
@@ -186,11 +180,8 @@ log.write(f"Running simulation for {args.steps} steps.\n")
 log.write(f"Time step: {tstep}\n")
 log.write(f"Running simulation, storing data every {store} iterations.\n")
 
-# Andrew imports a custom reporter from md_helper.py 
-# but it looks like he prints displacement to stdout for SMD.
-
-simulation.reporters.append(PDBReporter(output_pdb_path, args.steps // 100)) # only store 100 frames
-simulation.reporters.append(StateDataReporter(output_energy_stats, 
+simulation.reporters.append(PDBReporter(output_pdb_path, args.steps // 100)) # only store 100 frames in trajectory pdb
+simulation.reporters.append(StateDataReporter(output_energy, 
                                               store, 
                                               step=True, 
                                               time=True,
@@ -203,28 +194,4 @@ simulation.reporters.append(StateDataReporter(output_energy_stats,
                                               remainingTime=True,
                                               totalSteps=args.steps))
 
-with open(output_displacement, "w") as dispout, open(output_intradistance, "w") as intraout: 
-    dispout.write("Step,Distance(nm),PeptideCenterCoordinate\n")
-    intraout.write("Step,DistanceBetweenAlphaCarbons(nm)\n")
-    for step in range(args.steps):
-        simulation.step(1)
-        
-        if (step + 1) % store == 0: 
-            # calculate peptide's center of mass displacement
-            peptide_center = center_of_mass(
-                    simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
-                    simulation.context.getSystem(), 
-                    [a for i in peptide for a in i.atoms()])
-            displacement = np.linalg.norm(peptide_center - t0_peptide_center)
-        
-            # calculate aCarbon-aCarbon distance using previously fetched ids
-            positions = simulation.context.getState(getPositions=True).getPositions(asNumpy=True),
-            intra_distance = np.linalg.norm(positions[0][CA_1_id] - positions[0][CA_2_id])
-
-            dispout.write(f"{step+1},{displacement},{peptide_center}\n")
-            intraout.write(f"{step+1},{intra_distance}\n")
-
-# Before using the above loop I used this to advance the steps 
-# simulation.step(args.steps)
-
-log.close() # close the log file 
+simulation.step(args.steps)
