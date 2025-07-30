@@ -40,7 +40,7 @@ OUTPUT_DIR=$OUT_PARENT_DIR/$(date +"%Y%m%dT%H%M%S")_$NAME
 python3 ~/openmm_scripts/pullcomplex_md.py \
     --input $INPUT_FILE \
     --output $OUTPUT_DIR \
-    --steps 25000000 \
+    --steps 250000 \
     --freq 1000 \
     --add-water \
     --pull-force $FORCE
