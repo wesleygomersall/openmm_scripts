@@ -7,14 +7,17 @@ from intralength import acarbon_distances
 
 if __name__ == "__main__":
     mytraj = md.load(args.input).remove_solvent()
-    mytraj = prepend_reference(mytraj, md.load(args.ref))
+    myref = md.load(args.ref)
+    disp = peptide_displacement(mytraj, myref)
 
-    coords, disp = peptide_displacement(mytraj)
-    prmsd = peptide_rmsd(mytraj)
-    acdist = acarbon_distances(mytraj)
+    prepended = prepend_reference(mytraj, myref)
+    prmsd = peptide_rmsd(prepended)
+    acdist = acarbon_distances(prepended)
+    
+    assert len(disp) == len(prmsd) == len(acdist)
 
-    for i in range(mytraj.n_frames):
-        if i == 0: args.output.write("Frame,Displacement(nm),RMSD(nm),aCarbon-aCarbon Distance(nm)\n")
+    for i in range(prepended.n_frames):
+        if i == 0: args.output.write("Frame,Displacement(nm),RMSD(A),aCarbon-aCarbon Distance(nm)\n")
         args.output.write(f"{i},{disp[i]},{prmsd[i]},{acdist[i]}\n")
     
     args.output.close()

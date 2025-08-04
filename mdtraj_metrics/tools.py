@@ -28,6 +28,16 @@ def check_ref_match(trajectory, ref):
 
 
 def prepend_reference(trajectory, reference): 
+    '''
+    Prepend a reference pdb to a trajectory. Removes periodic boundary. 
+
+    Inputs: 
+        trajectory:     mdtraj trajectory object
+        reference:      pdb input to MD simulation
+
+    Output:
+        trajectory:     trajectory with reference added as the 0th frame. 
+    '''
     check_ref_match(trajectory, reference)
     newtraj1 = trajectory
     newtraj2 = reference
@@ -38,7 +48,29 @@ def prepend_reference(trajectory, reference):
     return newtraj2 + newtraj1
 
 
+def center_traj_pbc(trajec):
+    '''
+    Transform a trajectory with periodic boundary conditions to recenter the
+    trajectory on the first two chains. 
+
+    Input: 
+        mdtraj trajectory object
+
+    Output: 
+        mdtraj trajectory object, centered. 
+    '''
+    anchors = [set(trajec.topology.chain(0).atoms),
+               set(trajec.topology.chain(1).atoms)]
+    trajec.image_molecules(anchor_molecules=anchors, inplace=True)
+    return trajec
+
+
 if __name__ == "__main__":
+    # verify centering traj works properly
     mytraj = md.load(args.input).remove_solvent()
+    mytraj = center_traj_pbc(mytraj)
+
+    # verify prepending the reference works properly
+    mytraj2 = md.load(args.input).remove_solvent()
     myref = md.load(args.ref)
-    newtraj = prepend_reference(mytraj, myref)
+    prepended = prepend_reference(mytraj2, myref)
