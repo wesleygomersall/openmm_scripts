@@ -51,8 +51,8 @@ def plot_simulation(files: list, colors: list, labels: list,
             ylabel = 'Distance (nm)'
             title = 'Displacement of peptide'
         case "rmsd":
-            yaxis = 'RMSD(nm)'
-            ylabel = 'RMSD (nm)'
+            yaxis = 'RMSD(A)'
+            ylabel = 'RMSD (A)'
             title = 'Peptide RMSD'
         case "a-carbons": 
             yaxis = 'aCarbon-aCarbon Distance(nm)'
