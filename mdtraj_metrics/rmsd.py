@@ -14,7 +14,7 @@ def peptide_rmsd(trajectory):
     '''
     peptide_bb_atomids = trajectory.topology.select("(chainid == 1) and backbone")
     peprmsd = md.rmsd(trajectory, trajectory, 0, peptide_bb_atomids)
-    return peprmsd
+    return peprmsd * 10 # output in Angstroms not nm
 
 if __name__ == "__main__":
     mytraj = md.load(args.input).remove_solvent()
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     prmsd = peptide_rmsd(mytraj)
 
     for i, p in enumerate(prmsd):
-        if i == 0: args.output.write("Frame,RMSD(nm)\n")
+        if i == 0: args.output.write("Frame,RMSD(A)\n")
         args.output.write(f"{i},{p}\n")
     
     args.output.close()
