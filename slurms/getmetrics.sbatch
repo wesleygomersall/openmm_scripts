@@ -13,7 +13,7 @@
 # Tue, 22 Jul 2025 18:11:45 -0700
 # 
 # Get metrics for SMD run, create csv with the following information: 
-# Step,Displacement(nm),RMSD(nm),aCarbon-aCarbon Distance(nm)
+# Step,Displacement(nm),RMSD(A),aCarbon-aCarbon Distance(nm)
 
 if [ $# != 4 ]; then
     echo "Supply 4 arguments in the following order:"
