@@ -19,6 +19,7 @@ parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelv
 parser.add_argument("--pull-force", type=float, default=25.0, help="Pull force constant which will be applied to the peptide.")
 parser.add_argument("--add-water", action="store_true", help="Add this option to populate modeller with a surrounding box of water molecules.")
 parser.add_argument("--suppress-movement", action="store_true", help="Add this option to hold atoms in the protein chain in place throughout the simulation. If specified, program will look for file called 'hold.txt' containing residue numbers to hold stationary. 'hold.txt' should contain integer IDs separated by lines and/or spaces.") 
+parser.add_argument("--periodic", action="store_true", help="Add this option to use PME for nonbonded interaction, enforcing a periodic box on the trajectory.") 
 args = parser.parse_args()
 
 def center_of_mass(pos, system, atoms): 
@@ -66,6 +67,41 @@ def custom_force(direction, atoms, force_constant):
     pull.addBond([0])
 
     return pull
+
+def restraining_force(direction, atoms, anchor_point, distance, force_constant):
+    '''
+    Define force which is applied only if there is sufficient space between the two groups.  
+
+    Input(s): 
+        direction (list):       (x, y, z) vector for direction of force.
+        atoms (str):            List of atoms ids to apply force to.
+        anchor_point (str):     (x, y, z) coordinate for the point to restrain around. 
+        distance (list):        Distance in nm before restraining force is applied.
+        f_constant (float):     Constant force * kcal/mole/A
+
+    Output(s): 
+        openmm.CustomCentroidBondForce object
+    '''
+    force_constant *= kilocalories_per_mole / angstroms
+    # distance *= nanometer
+
+    fx = direction[0]
+    fy = direction[1]
+    fz = direction[2]
+
+    restrain = CustomCentroidBondForce(1, "step(sqrt((x1-t0_x)^2 + (y1-t0_y)^2 + (z1-t0_z)^2) - distance) * -1 * force_constant * (x1*fx + y1*fy + z1*fz)")
+    restrain.addGlobalParameter("force_constant", force_constant)
+    restrain.addGlobalParameter("fx", fx)
+    restrain.addGlobalParameter("fy", fy)
+    restrain.addGlobalParameter("fz", fz)
+    restrain.addGlobalParameter("t0_x", anchor_point[0] * nanometer)
+    restrain.addGlobalParameter("t0_y", anchor_point[1] * nanometer)
+    restrain.addGlobalParameter("t0_z", anchor_point[2] * nanometer)
+    restrain.addGlobalParameter("distance", distance)
+    restrain.addGroup(atoms)
+    restrain.addBond([0])
+
+    return restrain
 
 if not os.path.exists(args.output):
     os.mkdir(args.output)
@@ -118,34 +154,43 @@ if args.add_water:
                         neutralize=True)
 
 # create system needs to be after adding solvent and hydrogens
-system = forcefield.createSystem(modeller.topology, 
-                                 nonbondedMethod=PME, 
-                                 nonbondedCutoff=1*nanometer, 
-                                 removeCMMotion=False,
-                                 constraints=HBonds) # remove this line if error with constraints involving zero-mass atoms
+if args.periodic:
+    log.write("nonbondedMethod: PME\n")
+    system = forcefield.createSystem(modeller.topology, 
+                                    nonbondedMethod=PME, 
+                                    nonbondedCutoff=1*nanometer, 
+                                    removeCMMotion=False,
+                                    constraints=HBonds) # remove this line if error with constraints involving zero-mass atoms
+if not args.periodic: 
+    log.write("nonbondedMethod: CutoffNonPeriodic\n")
+    system = forcefield.createSystem(modeller.topology, 
+                                    nonbondedMethod=app.CutoffNonPeriodic,
+                                    nonbondedCutoff=1*nanometer, 
+                                    removeCMMotion=False,
+                                    constraints=HBonds) # remove this line if error with constraints involving zero-mass atoms
 
-# Optionally change mass of some residues' atoms to 0 to suppress movement
-# Warning: 
-#   This was causing N-terminal nitrogen atom of peptide to also remain locked 
-#   in place. Mass of that atom had not been set to zero.  
+if args.suppress_movement: 
+    # Optionally change mass of some residues' atoms to 0 to suppress movement
+    # Warning: 
+    #   This was causing N-terminal nitrogen atom of peptide to also remain locked 
+    #   in place. Mass of that atom had not been set to zero.  
 
-# if args.suppress_movement: 
-#     hold_residues = []
-#     with open('hold.txt', 'r') as holdfile:
-#         for line in holdfile:
-#             splitline = line.strip().split()
-#             hold_residues.extend([int(index) for index in splitline])
-#     log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
-#     for resnum, residue in enumerate(protein):
-#         if (resnum + 1) in hold_residues: 
-#             for atom in residue.atoms():
-#                 print(atom)
-#                 system.setParticleMass(int(atom.id), 0)
-#     # Debug suppress movement
-#     for r in protein: 
-#         for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
-#     for r in peptide: 
-#         for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
+    hold_residues = []
+    with open('hold.txt', 'r') as holdfile:
+        for line in holdfile:
+            splitline = line.strip().split()
+            hold_residues.extend([int(index) for index in splitline])
+    log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
+    for resnum, residue in enumerate(protein):
+        if (resnum + 1) in hold_residues: 
+            for atom in residue.atoms():
+                print(atom)
+                system.setParticleMass(int(atom.id), 0)
+    # Debug suppress movement
+    # for r in protein: 
+        # for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
+    # for r in peptide: 
+        # for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
 
 t0_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
@@ -159,7 +204,9 @@ peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
 pull_direction = t0_peptide_center - t0_protein_center
 pull_direction = pull_direction / np.linalg.norm(pull_direction) # make unit vector
 pullforce = custom_force(pull_direction, peptide_atoms, args.pull_force)
+restraint = restraining_force(pull_direction, peptide_atoms, t0_peptide_center, 8, args.pull_force)
 system.addForce(pullforce)
+system.addForce(restraint)
 log.write(f"Pull force {args.pull_force} kcal/mole/Angstrom added in {pull_direction} direction.")
 
 integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
