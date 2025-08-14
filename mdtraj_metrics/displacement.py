@@ -17,7 +17,8 @@ def peptide_displacement(trajectory, reference):
     '''
     com = md.compute_center_of_mass(trajectory, select="chainid == 1")
     ref_com = md.compute_center_of_mass(reference, select="chainid == 1")
-    displacement = [np.linalg.norm(np.subtract(c, com[0])) for c in com]
+    displacement = [np.linalg.norm(np.subtract(c, ref_com)) for c in com]
+    displacement.insert(0, 0.0) # result of np.linalg.norm(np.subtract(ref_com, ref_com))
     return displacement
     
 if __name__ == "__main__":
@@ -25,8 +26,6 @@ if __name__ == "__main__":
     myref = md.load(args.ref)
     
     displacement = peptide_displacement(mytraj, myref)
-    print(len(displacement)) 
-    print(displacement)
 
     for i in range(len(displacement)):
         if i == 0: args.output.write("Frame,Displacement(nm)\n")
