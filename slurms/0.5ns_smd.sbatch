@@ -4,10 +4,10 @@
 #SBATCH --job-name=smd
 #SBATCH --output=logs/openmm-%x_%j.out
 #SBATCH --error=logs/openmm-%x_%j.err
-#SBATCH --partition=gpulong
+#SBATCH --partition=gpu
 #SBATCH --ntasks=1                  # Number of tasks per node
 #SBATCH --cpus-per-task=4           # Number of CPU cores per task
-#SBATCH --time=7-00:00:00           # Time limit 7 days
+#SBATCH --time=1-00:00:00           # Time limit 1 day
 #SBATCH --mem=64G                   # Memory per node
 #SBATCH --gpus=1
 #SBATCH --gres=gpu:1
