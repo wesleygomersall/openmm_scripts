@@ -2,6 +2,7 @@
 
 from tools import *
 import numpy as np
+import matplotlib as plt
 
 def rmsf(trajectory):
     '''
@@ -52,6 +53,17 @@ if __name__ == "__main__":
             fout.write("Residue,RMSF(A)\n")
             for i, rmsf in enumerate(chain_rmsf): 
                 fout.write(f"{i},{rmsf}\n")
+
+        # plot 
+        plt.clf() # clear figure from any previous plotting
+        plt.plot(range(1, len(chain_rmsf) + 1), chain_rmsf)
+        plt.xlabel('Residue')
+        plt.ylabel('RMSF (A)')
+        plt.title('Per residue RMSF')
+        plt.grid(False)
+        output_path = f"RMSF_chain{chain_no}.pdf" 
+        plt.savefig(output_path, format="pdf")
+
         chain_no += 1
 
     args.output.close()
