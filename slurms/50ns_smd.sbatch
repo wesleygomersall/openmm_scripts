@@ -4,10 +4,10 @@
 #SBATCH --job-name=smd
 #SBATCH --output=logs/openmm-%x_%j.out
 #SBATCH --error=logs/openmm-%x_%j.err
-#SBATCH --partition=gpu
+#SBATCH --partition=gpulong
 #SBATCH --ntasks=1                  # Number of tasks per node
 #SBATCH --cpus-per-task=4           # Number of CPU cores per task
-#SBATCH --time=1-00:00:00           # Time limit 1 day
+#SBATCH --time=7-00:00:00           # Time limit 7 days
 #SBATCH --mem=64G                   # Memory per node
 #SBATCH --gpus=1
 #SBATCH --gres=gpu:1
@@ -16,8 +16,7 @@
 
 # Wesley Gomersall
 # Mon, 07 Jul 2025 19:52:05 -0700
-# Run 50ns long simulation with 1000 data entries, add explicit solvent, 
-#   suppress movement of residues specified in `hold.txt`.
+# Run 50ns long simulation with 1000 data entries, add explicit solvent
 
 if [ $# != 4 ]; then
     echo "Supply 4 arguments in the following order:"
