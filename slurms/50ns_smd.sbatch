@@ -64,3 +64,5 @@ python3 /home/wesg/openmm_scripts/mdtraj_metrics/allstats.py \
     -i $SUPERPOSED \
     -r $OPENMM_INPUT \
     -o $MDTRAJ_METRICS_OUTPUT
+
+pigz *.pdb
