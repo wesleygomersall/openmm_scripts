@@ -18,7 +18,6 @@ parser.add_argument("--pressure", type=float, default=1.0, help="Pressure (atmos
 parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelvin), default is 300K.")
 parser.add_argument("--pull-force", type=float, default=25.0, help="Pull force constant which will be applied to the peptide.")
 parser.add_argument("--add-water", action="store_true", help="Add this option to populate modeller with a surrounding box of water molecules.")
-parser.add_argument("--suppress-movement", type=str, default='', help="Add this option to hold atoms in the protein chain in place throughout the simulation. If specified, program will look for file specified which contains residue numbers to hold stationary. This file should contain integer IDs separated by lines and/or spaces.") 
 args = parser.parse_args()
 
 def center_of_mass(pos, system, atoms): 
@@ -66,36 +65,6 @@ def custom_force(direction, atoms, force_constant):
     pull.addBond([0])
 
     return pull
-
-"""
-def protein_restraint(mytraj):
-    '''
-    Define force to restrict protien movement to remain near t0 position. 
-
-    Input(s): 
-        mytraj openmm.Trajectory object
-
-    Output(s): 
-        openmm.CustomExternalForce object
-    '''
-
-    force_expression = 'k*((x-x0)^2+(y-y0)^2+(z-z0)^2)'
-    prot_restraint = CustomExternalForce(force_expression)
-    prot_restraint.addGlobalParameter("k", 100 * kilocalories_per_mole / angstroms) 
-    prot_restraint.addPerParticleParameter('x0')
-    prot_restraint.addPerParticleParameter('y0')
-    prot_restraint.addPerParticleParameter('z0')
-
-    # Add particles (alpha carbons of protein chain) 
-    t0_positions = mytraj.getPositions()
-    for chain in mytraj.topology.chains():
-        if chain.id == 0: 
-            for atom in chain.atoms():
-                if atom.name == 'CA': 
-                    prot_restraint.addParticle(atom.index, t0_positions[atom.index])
-
-    return prot_restraint
-"""
 
 def container_restraint(atoms, radius: float):
     '''
@@ -162,45 +131,12 @@ system = forcefield.createSystem(modeller.topology,
                                  removeCMMotion=False)
                                  # constraints=HBonds) # remove this line if error with constraints involving zero-mass atoms
 
-if args.suppress_movement != '': 
-    # Optionally change mass of some residues' atoms to 0 to suppress movement
-    # Warning: 
-    #   holding a bunch of the protein residues was causing the N-terminal
-    #   nitrogen atom of peptide to also remain locked 
-    #   in place. Mass of that atom had not been set to zero.  
-    #   This doesn't seem to be an issue when only 2 residues are held. 
-
-    hold_residues = []
-    with open(args.suppress_movement, 'r') as holdfile: 
-        for line in holdfile:
-            splitline = line.strip().split()
-            hold_residues.extend([int(index) for index in splitline])
-    # hold_residues = [96, 97] # used 96 and 97 for ComD 
-
-    log.write("Setting subset of atoms' mass to zero to suppress motion.\n")
-    log.write(f"Holding residues {hold_residues}\n")
-    for resnum, residue in enumerate(protein):
-        if (resnum + 1) in hold_residues: 
-            for atom in residue.atoms():
-                # print(atom)
-                system.setParticleMass(int(atom.id), 0)
-    # Debug suppress movement
-    # for r in protein: 
-        # for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
-    # for r in peptide: 
-        # for a in r.atoms(): print(a, system.getParticleMass(int(a.id)))
-
 t0_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
 t0_peptide_center = center_of_mass(modeller.positions, system,
         [a for i in peptide for a in i.atoms()])
 log.write(f"Initial protein center of mass: {t0_protein_center}\n")
 log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
-
-# Add restraint for protein atoms 
-# holdforce = protein_restraint(pdb)
-# system.addForce(holdforce)
-# log.write(f"Holding force 100 kcal/mole/Angstrom added to restrain protein.")
 
 # Add custom force pulling on the peptide to the system
 peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
