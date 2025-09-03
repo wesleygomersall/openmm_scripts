@@ -2,7 +2,7 @@
 
 from tools import *
 import numpy as np
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 def rmsf(trajectory):
     '''
