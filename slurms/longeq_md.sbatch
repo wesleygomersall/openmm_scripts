@@ -46,4 +46,4 @@ python3 ~/openmm_scripts/MD_longeq.py \
     --steps $STEPS \
     --freq 1000 \
     --add-water \
-    --variable-int
+    # --variable-int # using variable integrator has broken the reporters i think. 

@@ -126,8 +126,10 @@ simulation.minimizeEnergy()
 minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 log.write(f"Potential energy after minimization: {minimized_sim_energy}\n")
 
-log.write(f"{args.steps} steps\n")
-log.write(f"Time step: {tstep}\n")
+if not args.variable_int: 
+    log.write(f"{args.steps} steps\n")
+    log.write(f"Time step: {tstep}\n")
+log.write(f"Total time: {total_time.value_in_unit(unit.nanoseconds)}")
 log.write(f"energy.csv rows = {store}\n")
 
 simulation.reporters.append(PDBReporter(output_pdb_path, pdbstore)) 
