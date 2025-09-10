@@ -86,14 +86,12 @@ def container_restraint(atoms, radius: float):
         container.addParticle(p, [])
     return container
 
-"""
-def COM_restraint(atoms, radius):
-    radius *= nanometer
-    force_expression = "COM_restraint_force * max(0, d-rad)^2; d = distance(g1, g2) " 
-    restraint = CustomCentroidBondForce(force_expression) 
-    restraint.addGlobalParameter("rad", radius)
-    restraint.addGlobalParameter("COM_restraint_force", 100.0 * kilocalories_per_mole / angstroms) 
-"""
+# def COM_restraint(atoms, radius):
+    # radius *= nanometer
+    # force_expression = "COM_restraint_force * max(0, d-rad)^2; d = distance(g1, g2) " 
+    # restraint = CustomCentroidBondForce(force_expression) 
+    # restraint.addGlobalParameter("rad", radius)
+    # restraint.addGlobalParameter("COM_restraint_force", 100.0 * kilocalories_per_mole / angstroms) 
 
 if not os.path.exists(args.output):
     os.mkdir(args.output)

@@ -66,9 +66,8 @@ output_energy = args.output + "/energy.csv"
 # print(int(args.steps))
 
 
-gpu = False
-# if gpu: plat = 'CUDA'
-# else: plat = 'CPU'
+# gpu = False
+gpu = True
 
 log = open(output_log_path, 'w') # write run info to this log rather than stdout
 
@@ -115,7 +114,7 @@ if args.variable_int:
 else: 
     integrator = LangevinIntegrator(temperature, 1/unit.picosecond, tstep) 
 
-simulation = Simulation(modeller.topology, system, integrator, Platform.getPlatformByName('CUDA' if gpu else 'CPU'))
+simulation = Simulation(modeller.topology, system, integrator, Platform.getPlatformByName('CUDA')) # if gpu else 'CPU'))
 simulation.context.setPositions(modeller.positions)
 
 log.write(f"Temperature (K): {temperature}\n")
