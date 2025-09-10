@@ -86,6 +86,14 @@ def container_restraint(atoms, radius: float):
         container.addParticle(p, [])
     return container
 
+"""
+def COM_restraint(atoms, radius):
+    radius *= nanometer
+    force_expression = "COM_restraint_force * max(0, d-rad)^2; d = distance(g1, g2) " 
+    restraint = CustomCentroidBondForce(force_expression) 
+    restraint.addGlobalParameter("rad", radius)
+    restraint.addGlobalParameter("COM_restraint_force", 100.0 * kilocalories_per_mole / angstroms) 
+"""
 
 if not os.path.exists(args.output):
     os.mkdir(args.output)
@@ -128,8 +136,8 @@ if args.add_water:
 system = forcefield.createSystem(modeller.topology, 
                                  nonbondedMethod=app.CutoffNonPeriodic, 
                                  nonbondedCutoff=1*nanometer, 
-                                 removeCMMotion=False)
-                                 # constraints=HBonds) # remove this line if error with constraints involving zero-mass atoms
+                                 removeCMMotion=True,
+                                 constraints=HBonds) 
 
 t0_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
