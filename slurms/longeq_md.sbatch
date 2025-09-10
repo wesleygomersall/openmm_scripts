@@ -39,7 +39,8 @@ OUTPUT_DIR=$OUT_PARENT_DIR/$(date +"%Y%m%dT%H%M%S")_$NAME
 
 mkdir -p $OUT_PARENT_DIR
 
-python3 ~/openmm_scripts/MD_longeq.py \
+
+python3 ~/openmm_scripts/equilibrate_md.py \
     --input $OPENMM_INPUT \
     --output $OUTPUT_DIR \
     --timestep $TSTEP \
