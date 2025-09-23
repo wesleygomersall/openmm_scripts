@@ -23,12 +23,14 @@ parser.add_argument("--pressure", type=float, default=1.0, help="Pressure (atmos
 parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelvin), default is 300K.")
 parser.add_argument("--add-water", action="store_true", help="Add this option to populate modeller with a surrounding box of water molecules.")
 parser.add_argument("--variable-int", action="store_true", help="Add this option to use variable integrator for constructing the system.")
+parser.add_argument("--restrain-prot", action="store_true", help="Add this option to restrain the drift of chain 0.")
+parser.add_argument("--container", action="store_true", help="Add this option to contain entire system within a sphere of radius: 10nm")
 args = parser.parse_args()
 
 
 def container_restraint(atoms, radius: float):
     '''
-    Define force to contain peptide chain to a spherical container. 
+    Define force to contain system to a spherical container. 
 
     Input(s): 
         atoms (list):           List of atoms ids to apply force to.
@@ -46,6 +48,26 @@ def container_restraint(atoms, radius: float):
         container.addParticle(p, [])
     return container
 
+def protein_restraint(atoms, positions):
+    '''
+    Define force to contain protein chain to near its starting position. The purpose of implementing
+    this restraint is to try to avoid the complex drifting to the edge of the solvated box. 
+
+    Input(s): 
+        atoms (list):           List of atoms indices to apply force to.
+        positions (list):       List of xyz positions for particles in system
+
+    Output(s): 
+        openmm.CustomExternalForce object
+    '''
+    restraint = CustomExternalForce("k * d^2; d = sqrt((x -x0)^2 + (y-y0)^2 + (z-z0)^2)")
+    restraint.addGlobalParameter("k", 10.0 * unit.kilocalories_per_mole / unit.angstroms ** 2) 
+    restraint.addPerParticleParameter("x0")
+    restraint.addPerParticleParameter("y0")
+    restraint.addPerParticleParameter("z0")
+    for p in atoms: 
+        restraint.addParticle(p, positions[p])
+    return restraint
 
 if not os.path.exists(args.output):
     os.mkdir(args.output)
@@ -62,13 +84,6 @@ output_log_path = args.output + "/log.txt"
 output_pdb_path = args.output + "/output.pdb"
 output_energy = args.output + "/energy.csv"
 
-## TESTING
-# print(int(args.steps))
-
-
-# gpu = False
-gpu = True
-
 log = open(output_log_path, 'w') # write run info to this log rather than stdout
 
 log.write(f"Reading input pdb {args.input}\n")
@@ -80,10 +95,6 @@ modeller = Modeller(pdb.topology, pdb.positions)
 if len(list(modeller.topology.chains())) != 2: 
     raise Exception("Topology does not have exactly two chains.")
     
-for i, c in enumerate(modeller.topology.chains()):
-    if i == 0: protein = [res for res in c.residues()]
-    if i == 1: peptide = [res for res in c.residues()]
-
 log.write("Adding hydrogen atoms.\n")
 modeller.addHydrogens(forcefield)
 
@@ -101,12 +112,25 @@ system = forcefield.createSystem(modeller.topology,
                                  removeCMMotion=False,
                                  constraints=HBonds) 
 
+for i, c in enumerate(modeller.topology.chains()):
+    if i == 0: protein = [res for res in c.residues()]
+    if i == 1: peptide = [res for res in c.residues()]
 
-# Enforce a sphere boundary of radius 20nm
-sphere_container = container_restraint(range(system.getNumParticles()), 20)
-system.addForce(sphere_container)
-log.write(f"Spherical container of radius 20 nm added.") 
+t0_positions = pdb.getPositions()
+protein_atoms = [atom.index for residue in protein for atom in residue.atoms()]
 
+# Add optional external forces
+if args.container:
+    sphere_container = container_restraint(range(system.getNumParticles()), 10)
+    system.addForce(sphere_container)
+    log.write(f"Spherical container of radius 10 nm added.") 
+if args.restrain_prot: 
+    t0_restraint = protein_restraint(protein_atoms, t0_positions)
+    system.addForce(t0_restraint)
+    log.write(f"Protein restraint added") 
+
+# Set up integrator 
+# Variable integrator currently WIP with reporters -no output using stepTo()
 if args.variable_int:
     error_tolerance = 0.001
     integrator = VariableLangevinIntegrator(temperature, 1/unit.picosecond, error_tolerance) 
@@ -148,6 +172,6 @@ simulation.reporters.append(StateDataReporter(output_energy,
 
 
 if args.variable_int:
-    integrator.stepTo(total_time)
+    integrator.stepTo(total_time) # Issue: StepTo gets no output to reporters?
 else: 
     simulation.step(int(args.steps))
