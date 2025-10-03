@@ -4,7 +4,7 @@ from tools import *
 import numpy as np
 import matplotlib.pyplot as plt
 
-def rmsf(trajectory):
+def calc_rmsf(trajectory):
     '''
     Calculate per-residue RMSF for each chain in a trajectory, first frame as
     reference. 
@@ -32,19 +32,13 @@ def rmsf(trajectory):
             counter += 1
         rmsf_by_chain.append(templist) 
 
-    # testing, remove prints() later
-    for chainrmsf in rmsf_by_chain: 
-        print(chainrmsf)
-        for aarmsf in chainrmsf:
-            print(aarmsf)
-
     return rmsf_by_chain
 
-if __name__ == "__main__":
+def main(): 
     mytraj = md.load(args.input).remove_solvent()
     mytraj = prepend_reference(mytraj, md.load(args.ref))
     
-    my_rmsfs = rmsf(mytraj)
+    my_rmsfs = calc_rmsf(mytraj)
 
     chain_no = 0 
     for chain_rmsf in my_rmsfs:
@@ -67,3 +61,6 @@ if __name__ == "__main__":
         chain_no += 1
 
     args.output.close()
+
+if __name__ == "__main__":
+    main()
