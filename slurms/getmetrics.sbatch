@@ -26,7 +26,7 @@ TRAJECTORY=$2
 REFERENCE=$3
 OUTPUT=$4
 
-SCRIPT='/home/wesg/openmm_scripts/mdtraj_metrics/allstats.py'
+SCRIPT="$HOME/openmm_scripts/mdtraj_metrics/allstats.py"
 
 source ~/miniforge3/etc/profile.d/conda.sh # for conda to work
 conda activate mdtraj
