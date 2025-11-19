@@ -47,4 +47,6 @@ python3 ~/openmm_scripts/equilibrate_md.py \
     --steps $STEPS \
     --freq 1000 \
     --add-water \
+    --container \
+    # --restrain-prot \ # test this option to tune an appropriate holding force on the protein complex. 
     # --variable-int # using variable integrator has broken the reporters i think. 
