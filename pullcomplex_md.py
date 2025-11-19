@@ -18,6 +18,7 @@ parser.add_argument("--pressure", type=float, default=1.0, help="Pressure (atmos
 parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelvin), default is 300K.")
 parser.add_argument("--pull-force", type=float, default=25.0, help="Pull force constant which will be applied to the peptide.")
 parser.add_argument("--add-water", action="store_true", help="Add this option to populate modeller with a surrounding box of water molecules.")
+parser.add_argument("--suppress-movement", type=str, default='', help="Add this option to hold atoms in the protein chain in place throughout the simulation. If specified, program will look for file specified which contains residue numbers to hold stationary. This file should contain integer IDs separated by lines and/or spaces.") 
 args = parser.parse_args()
 
 def center_of_mass(pos, system, atoms): 
@@ -136,6 +137,23 @@ system = forcefield.createSystem(modeller.topology,
                                  nonbondedCutoff=1*nanometer, 
                                  removeCMMotion=True,
                                  constraints=HBonds) 
+
+if args.suppress_movement != '': 
+    # Optionally change masses of these residues to zero to suppress their motion
+    # Previously had issue when adding too many residues due to contraints=HBonds,
+    # though this was not modifying CA mass exclusively
+
+    hold_residues = []
+    with open(args.suppress_movement, 'r') as holdfile: 
+        for line in holdfile: 
+            splitline = line.strip().split()
+            hold_residues.extend([int(index) for index in splitline])
+    log.write(f"Holding residue alpha carbons: {hold_residues}\n")
+    for resnum, residue in enumerate(protein):
+        if (resnum + 1) in hold_residues:
+            for atom in residue.atoms():
+                if atom.name == "CA": # Only modify alpha carbon mass
+                    system.setParticleMass(int(atom.id),0)
 
 t0_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
