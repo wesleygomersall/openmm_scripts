@@ -13,9 +13,9 @@ args = parser.parse_args()
 
 
 def check_ref_match(trajectory, ref):
-    if trajectory.n_chains != 2:
-        print(f"{trajectory.n_chains} chains in trajectory.")
-        raise AssertionError("Number of chains in trajectory is not 2.")
+    # if trajectory.n_chains != 2:
+        # print(f"{trajectory.n_chains} chains in trajectory.")
+        # raise AssertionError("Number of chains in trajectory is not 2.")
     if trajectory.n_chains != ref.n_chains:
         print(f"{trajectory.n_chains} chains in trajectory.\n{ref.n_chains} chains in reference.")
         raise AssertionError("Number of chains in trajectory and reference differ.")
