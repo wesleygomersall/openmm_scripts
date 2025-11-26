@@ -92,11 +92,8 @@ pdb = PDBFile(args.input)
 forcefield = ForceField('amber14-all.xml', 'amber14/tip3p.xml')
 modeller = Modeller(pdb.topology, pdb.positions)
 
-if len(list(modeller.topology.chains())) != 2: 
-    raise Exception("Topology does not have exactly two chains.")
-    
-log.write("Adding hydrogen atoms.\n")
-modeller.addHydrogens(forcefield)
+# log.write("Adding hydrogen atoms.\n")
+# modeller.addHydrogens(forcefield)
 
 if args.add_water: 
     log.write("Add water solvent\n")
