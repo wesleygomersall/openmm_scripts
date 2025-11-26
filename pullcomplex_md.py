@@ -8,15 +8,15 @@ from sys import stdout
 import argparse
 import numpy as np
 
-parser = argparse.ArgumentParser(description="MD trajectory simulating constant force pulling apart a protein-peptide complex.")
-parser.add_argument("--input", type=str, help="Path to input pdb containing both protein and peptide. If errors exist, try using PDBfixer first.")
+parser = argparse.ArgumentParser(description="MD trajectory simulating constant force pulling apart a protein-ligand complex.")
+parser.add_argument("--input", type=str, help="Path to input pdb containing both protein and ligand. If errors exist, try using PDBfixer first.")
 parser.add_argument("--output", type=str, help="Path to output directory. Will be created if not already existing.")
 parser.add_argument("--timestep", type=float, default=2.0, help="Time between steps in femtoseconds, default is 2.")
 parser.add_argument("--steps", type=int, default=10_000, help="Total steps in simulation, default is ten thousand.")
 parser.add_argument("--freq", type=int, default=100, help="Frequency of reporter, will record data `freq` amount of times (every `step // freq` steps).")
 parser.add_argument("--pressure", type=float, default=1.0, help="Pressure (atmospheres), default is 1 atm.")
 parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelvin), default is 300K.")
-parser.add_argument("--pull-force", type=float, default=25.0, help="Pull force constant which will be applied to the peptide.")
+parser.add_argument("--pull-force", type=float, default=25.0, help="Pull force constant which will be applied to the ligand.")
 parser.add_argument("--add-water", action="store_true", help="Add this option to populate modeller with a surrounding box of water molecules.")
 parser.add_argument("--suppress-movement", type=str, default='', help="Add this option to hold atoms in the protein chain in place throughout the simulation. If specified, program will look for file specified which contains residue numbers to hold stationary. This file should contain integer IDs separated by lines and/or spaces.") 
 args = parser.parse_args()
@@ -69,7 +69,7 @@ def custom_force(direction, atoms, force_constant):
 
 def container_restraint(atoms, radius: float):
     '''
-    Define force to contain peptide chain to a spherical container. 
+    Define force to contain ligand chain to a spherical container. 
 
     Input(s): 
         atoms (list):           List of atoms ids to apply force to.
@@ -116,9 +116,15 @@ modeller = Modeller(pdb.topology, pdb.positions)
 if len(list(modeller.topology.chains())) != 2: 
     raise Exception("Topology does not have exactly two chains.")
     
+all_residues = []
 for i, c in enumerate(modeller.topology.chains()):
-    if i == 0: protein = [res for res in c.residues()]
-    if i == 1: peptide = [res for res in c.residues()]
+    all_residues.append([res for res in c.residues()])
+if len(all_residues[0]) < len(all_residues[1]): 
+    protein = all_residues[1]
+    ligand = all_residues[0]
+elif len(all_residues[0] > len(all_residues[1]):
+    protein = all_residues[0]
+    ligand = all_residues[1]
 
 log.write("Adding hydrogen atoms.\n")
 modeller.addHydrogens(forcefield)
@@ -157,16 +163,16 @@ if args.suppress_movement != '':
 
 t0_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
-t0_peptide_center = center_of_mass(modeller.positions, system,
-        [a for i in peptide for a in i.atoms()])
+t0_ligand_center = center_of_mass(modeller.positions, system,
+        [a for i in ligand for a in i.atoms()])
 log.write(f"Initial protein center of mass: {t0_protein_center}\n")
-log.write(f"Initial peptide center of mass: {t0_peptide_center}\n")
+log.write(f"Initial ligand center of mass: {t0_ligand_center}\n")
 
-# Add custom force pulling on the peptide to the system
-peptide_atoms = [atom.index for residue in peptide for atom in residue.atoms()]
-pull_direction = t0_peptide_center - t0_protein_center
+# Add custom force pulling on the ligand atoms to the system
+pull_atoms = [atom.index for residue in ligand for atom in residue.atoms()]
+pull_direction = t0_ligand_center - t0_protein_center
 pull_direction = pull_direction / np.linalg.norm(pull_direction) # make unit vector
-pullforce = custom_force(pull_direction, peptide_atoms, args.pull_force)
+pullforce = custom_force(pull_direction, pull_atoms, args.pull_force)
 system.addForce(pullforce)
 log.write(f"Pull force {args.pull_force} kcal/mole/Angstrom added in {pull_direction} direction.")
 
