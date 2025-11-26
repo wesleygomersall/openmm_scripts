@@ -122,7 +122,7 @@ for i, c in enumerate(modeller.topology.chains()):
 if len(all_residues[0]) < len(all_residues[1]): 
     protein = all_residues[1]
     ligand = all_residues[0]
-elif len(all_residues[0] > len(all_residues[1]):
+elif len(all_residues[0]) > len(all_residues[1]):
     protein = all_residues[0]
     ligand = all_residues[1]
 
