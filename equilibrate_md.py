@@ -13,8 +13,8 @@ import argparse
 import numpy as np
 import os
 
-parser = argparse.ArgumentParser(description="MD trajectory simulating a protein-peptide complex over time.")
-parser.add_argument("--input", type=str, help="Path to input pdb containing both protein and peptide. If errors exist, try using PDBfixer first.")
+parser = argparse.ArgumentParser(description="MD trajectory simulating a protein-ligand complex over time.")
+parser.add_argument("--input", type=str, help="Path to input pdb containing system. Use PDBfixer on this input first.")
 parser.add_argument("--output", type=str, help="Path to output directory. Will be created if not already existing.")
 parser.add_argument("--timestep", type=float, default=2.0, help="Time between steps in femtoseconds, default is 2.")
 parser.add_argument("--steps", type=int, default=10_000, help="Total steps in simulation, default is ten thousand.")
@@ -92,11 +92,8 @@ pdb = PDBFile(args.input)
 forcefield = ForceField('amber14-all.xml', 'amber14/tip3p.xml')
 modeller = Modeller(pdb.topology, pdb.positions)
 
-if len(list(modeller.topology.chains())) != 2: 
-    raise Exception("Topology does not have exactly two chains.")
-    
-log.write("Adding hydrogen atoms.\n")
-modeller.addHydrogens(forcefield)
+# log.write("Adding hydrogen atoms.\n")
+# modeller.addHydrogens(forcefield)
 
 if args.add_water: 
     log.write("Add water solvent\n")
@@ -112,9 +109,16 @@ system = forcefield.createSystem(modeller.topology,
                                  removeCMMotion=False,
                                  constraints=HBonds) 
 
-for i, c in enumerate(modeller.topology.chains()):
-    if i == 0: protein = [res for res in c.residues()]
-    if i == 1: peptide = [res for res in c.residues()]
+# Assume that the ligand is represented by the smaller chain
+all_residues = []
+for c in modeller.topology.chains():
+    all_residues.append([res for res in c.residues()])
+if len(all_residues[0]) < len(all_residues[1]): 
+    protein = all_residues[1]
+    ligand = all_residues[0]
+elif len(all_residues[0]) > len(all_residues[1]):
+    protein = all_residues[0]
+    ligand = all_residues[1]
 
 t0_positions = pdb.getPositions()
 protein_atoms = [atom.index for residue in protein for atom in residue.atoms()]
