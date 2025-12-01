@@ -15,9 +15,8 @@
 #SBATCH --mail-user=wesg@uoregon.edu
 
 # Wesley Gomersall
-# Mon, 07 Jul 2025 19:52:05 -0700
-# Run 50ns long simulation with 1000 data entries, add explicit solvent, 
-#   suppress movement of residues specified in `hold.txt`.
+# Monday, 01 December, 2025, 11:37:13 
+# Run 0.5ns long simulation for troubleshoot
 
 if [ $# != 4 ]; then
     echo "Supply 4 arguments in the following order:"
@@ -29,6 +28,8 @@ INPUT_FILE=$1
 OUT_PARENT_DIR=$2
 NAME=$3
 FORCE=$4
+
+mkdir -p $OUT_PARENT_DIR
 
 source ~/miniforge3/etc/profile.d/conda.sh # for conda to work
 conda activate openMM
@@ -43,14 +44,18 @@ python3 ~/openmm_scripts/pullcomplex_md.py \
     --steps 250000 \
     --freq 1000 \
     --add-water \
-    --pull-force $FORCE
+    --pull-force $FORCE \
+    --suppress-movement 
+
+# Don't do the rest for troubleshooting only openmm
+exit 
 
 # Get metrics from output.pdb with mdtraj
 conda activate mdtraj
 
 cd $OUTPUT_DIR
 
-TRAJECTORY="$OUTPUT_DIR/*.pdb"
+TRAJECTORY="*.pdb"
 MDTRAJ_METRICS_OUTPUT='mdtrajanalysis.csv'
 
 python3 /home/wesg/openmm_scripts/mdtraj_metrics/allstats.py \

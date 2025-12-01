@@ -30,6 +30,8 @@ OUT_PARENT_DIR=$2
 NAME=$3
 FORCE=$4
 
+mkdir -p $OUT_PARENT_DIR
+
 source ~/miniforge3/etc/profile.d/conda.sh # for conda to work
 conda activate openMM
 
@@ -43,7 +45,12 @@ python3 ~/openmm_scripts/pullcomplex_md.py \
     --steps 25000000 \
     --freq 1000 \
     --add-water \
-    --pull-force $FORCE
+    --pull-force $FORCE \
+    --suppress-movement 
+
+# For now, move this up here to avoid wasting time on superpose.py and allstats.py
+pigz *.pdb
+exit
 
 # openmm output
 TRAJECTORY="$OUTPUT_DIR/output.pdb"
@@ -65,4 +72,3 @@ python3 /home/wesg/openmm_scripts/mdtraj_metrics/allstats.py \
     -r $OPENMM_INPUT \
     -o $MDTRAJ_METRICS_OUTPUT
 
-pigz *.pdb

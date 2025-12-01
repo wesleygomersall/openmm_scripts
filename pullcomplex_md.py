@@ -18,7 +18,7 @@ parser.add_argument("--pressure", type=float, default=1.0, help="Pressure (atmos
 parser.add_argument("--temp", type=float, default=300.0, help="Temperature (Kelvin), default is 300K.")
 parser.add_argument("--pull-force", type=float, default=25.0, help="Pull force constant which will be applied to the ligand.")
 parser.add_argument("--add-water", action="store_true", help="Add this option to populate modeller with a surrounding box of water molecules.")
-parser.add_argument("--suppress-movement", type=str, default='', help="Add this option to hold atoms in the protein chain in place throughout the simulation. If specified, program will look for file specified which contains residue numbers to hold stationary. This file should contain integer IDs separated by lines and/or spaces.") 
+parser.add_argument("--suppress-specific", type=str, default='', help="Movement of some protein alpha carbons will be suppressed for the duration of the simulation. If this not specified, will default to all alpha carbons 1.5 nm from ligand. If specified, program will look for file specified which contains residue numbers to hold stationary. This file should contain integer IDs separated by lines and/or spaces. If this file is empty, all atoms will be allowed to move for the duration of the simulation.") 
 args = parser.parse_args()
 
 def center_of_mass(pos, system, atoms): 
@@ -141,25 +141,52 @@ if args.add_water:
 system = forcefield.createSystem(modeller.topology, 
                                  nonbondedMethod=app.CutoffNonPeriodic, 
                                  nonbondedCutoff=1*nanometer, 
-                                 removeCMMotion=True,
-                                 constraints=HBonds) 
+                                 removeCMMotion=True) 
 
-if args.suppress_movement != '': 
-    # Optionally change masses of these residues to zero to suppress their motion
-    # Previously had issue when adding too many residues due to contraints=HBonds,
-    # though this was not modifying CA mass exclusively
+if args.suppress_specific == '': 
+    '''
+    Cannot use constraints (contraints=HBonds in
+    forcefield.createSystem) involving massless particles - Hydrogens bonded
+    to alpha carbons) 
+    '''
+    # beyond this distance from ligand, alpha carbons will be massless
+    suppress_distance = 1.5 * nanometer 
 
+    hold_residues = []
+
+    positions = modeller.getPositions()
+
+    for resnum1, residue1 in enumerate(protein):
+        for atom1 in residue1.atoms():
+            if atom1.name == "CA": 
+
+                distances = [] # alpha carbon distance from all atoms in ligand
+                for residue2 in ligand: 
+                    for atom2 in residue2.atoms(): 
+                        distances.append(norm(positions[int(atom1.id)] - positions[int(atom2.id)]))
+
+                if min(distances) >= suppress_distance: 
+                    system.setParticleMass(int(atom1.id),0)
+                    hold_residues.append(resnum1)
+
+    log.write(f"Holding residue alpha carbons: {hold_residues}\n")
+if args.suppress_specific != '': 
     hold_residues = []
     with open(args.suppress_movement, 'r') as holdfile: 
         for line in holdfile: 
             splitline = line.strip().split()
-            hold_residues.extend([int(index) for index in splitline])
-    log.write(f"Holding residue alpha carbons: {hold_residues}\n")
-    for resnum, residue in enumerate(protein):
-        if (resnum + 1) in hold_residues:
-            for atom in residue.atoms():
-                if atom.name == "CA": # Only modify alpha carbon mass
-                    system.setParticleMass(int(atom.id),0)
+            hold_residues.extend([int(item) for item in splitline])
+
+    if hold_residues != []: 
+        for resnum, residue in enumerate(protein):
+            if (resnum + 1) in hold_residues:
+                for atom in residue.atoms():
+                    if atom.name == "CA": # Only modify alpha carbon mass
+                        system.setParticleMass(int(atom.id),0)
+
+        log.write(f"Holding residue alpha carbons: {hold_residues}\n")
+    else: 
+        log.write(f"Holding residue alpha carbons: None!\n")
 
 t0_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
@@ -174,12 +201,12 @@ pull_direction = t0_ligand_center - t0_protein_center
 pull_direction = pull_direction / np.linalg.norm(pull_direction) # make unit vector
 pullforce = custom_force(pull_direction, pull_atoms, args.pull_force)
 system.addForce(pullforce)
-log.write(f"Pull force {args.pull_force} kcal/mole/Angstrom added in {pull_direction} direction.")
+log.write(f"Pull force {args.pull_force} kcal/mole/Angstrom added in {pull_direction} direction.\n")
 
 # Enforce a sphere boundary of radius 10nm
 sphere_container = container_restraint(range(system.getNumParticles()), 10)
 system.addForce(sphere_container)
-log.write(f"Spherical container of radius 10 nm added.") 
+log.write(f"Spherical container of radius 10 nm added.\n") 
 
 integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
 
