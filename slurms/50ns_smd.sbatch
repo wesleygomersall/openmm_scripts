@@ -45,8 +45,7 @@ python3 ~/openmm_scripts/pullcomplex_md.py \
     --steps 25000000 \
     --freq 1000 \
     --add-water \
-    --pull-force $FORCE \
-    --suppress-movement 
+    --pull-force $FORCE
 
 # For now, move this up here to avoid wasting time on superpose.py and allstats.py
 pigz *.pdb

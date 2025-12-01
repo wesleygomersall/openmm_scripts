@@ -44,8 +44,7 @@ python3 ~/openmm_scripts/pullcomplex_md.py \
     --steps 250000 \
     --freq 1000 \
     --add-water \
-    --pull-force $FORCE \
-    --suppress-movement 
+    --pull-force $FORCE
 
 # Don't do the rest for troubleshooting only openmm
 exit 
