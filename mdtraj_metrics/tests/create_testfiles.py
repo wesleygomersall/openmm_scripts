@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 
-from tools import * 
+import mdtraj as md
+import argparse
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument("--input", "-i", type=str, help="")
+    parser.add_argument("--ref", "-r", type=str, help="")
+    args = parser.parse_args()
+
     mytraj = md.load(args.input).remove_solvent()
     reference = md.load(args.ref)
 
