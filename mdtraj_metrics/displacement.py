@@ -1,34 +1,36 @@
 #!/usr/bin/env python3
 
-import mdtraj as md 
 import numpy as np
-from tools import *
+import pandas as pd
+import mdtraj as md 
+import collect_in
 
-
-def peptide_displacement(trajectory, reference):
+def displacement(trajectory, reference, chains): 
     '''
-    Track the displacement between and atom from ptortein and an atom from
-    peptide throughout a trajectory.
-    
-    Input: 
-        mdtraj Trajectory object
-    Output: 
-
+    Track the displacement between chains center of masses throughout the
+    states of a trajectory.
     '''
-    com = md.compute_center_of_mass(trajectory, select="chainid == 1")
-    ref_com = md.compute_center_of_mass(reference, select="chainid == 1")
-    displacement = [np.linalg.norm(np.subtract(c, ref_com)) for c in com]
-    displacement.insert(0, 0.0) # result of np.linalg.norm(np.subtract(ref_com, ref_com))
-    return displacement
+    df = pd.DataFrame()
+    for chain_name, residues in chains: 
+        if len(residues) > 1: 
+            selection_string = f"index {residues[0] - 1} to {residues[-1] - 1}"
+        else: 
+            selection_string = f"index {residues[0] - 1}"
+
+        com = md.compute_center_of_mass(trajectory, select=selection_string)
+        ref_com = md.compute_center_of_mass(reference, select=selection_string)
+        displacement = [np.linalg.norm(np.subtract(c, ref_com)) for c in com]
+
+        col_name = chain_name + "_displacement(nm)"
+        df[col_name] = displacement
+
+    return df
     
+def main():
+    data = collect_in.get_traj_inputs()
+    displacements = displacement(data.input_traj, data.reference, data.chains)
+    outfilepath = data.input_traj_filepath.strip('.pdb') + "_displacement.csv"
+    displacements.to_csv(outfilepath)
+
 if __name__ == "__main__":
-    mytraj = md.load(args.input).remove_solvent()
-    myref = md.load(args.ref)
-    
-    displacement = peptide_displacement(mytraj, myref)
-
-    for i in range(len(displacement)):
-        if i == 0: args.output.write("Frame,Displacement(nm)\n")
-        args.output.write(f"{i},{displacement[i]}\n")
-
-    args.output.close()
+    main()
