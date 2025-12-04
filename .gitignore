@@ -2,5 +2,5 @@ data
 logs
 __pycache__
 *.pdf
-tests/test_trajectory_RMSDs.csv
-tests/test_trajectory_displacement.csv
+mdtraj_metrics/tests/test_trajectory_RMSDs.csv
+mdtraj_metrics/tests/test_trajectory_displacement.csv
