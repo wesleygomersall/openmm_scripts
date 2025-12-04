@@ -31,4 +31,13 @@ $ cat chinfo
 
 There is an example in tests/test_chaininfo. 
 
-Currently not compatible are backbone RMSD and selections including non-protein atoms (tRNA in my case).
+Currently not compatible are backbone RMSD and selections including non-protein
+atoms (tRNA in my case).
+
+## OLD/ 
+
+This directory contains the old mdtraj metrics scripts. Most of these scripts
+rely on prepending the reference pdb to the trajectory and subsequently
+calculating metrics using the 0th frame as the reference point. There are also
+scripts which are intended for use only with trajectories which have periodic
+boundary conditions (not currently implemented in openMM scripts).
