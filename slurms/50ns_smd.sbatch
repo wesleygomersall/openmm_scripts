@@ -47,27 +47,7 @@ python3 ~/openmm_scripts/pullcomplex_md.py \
     --add-water \
     --pull-force $FORCE
 
-# For now, move this up here to avoid wasting time on superpose.py and allstats.py
-pigz *.pdb
-exit
-
-# openmm output
-TRAJECTORY="$OUTPUT_DIR/output.pdb"
-
-# Get metrics from output.pdb with mdtraj
-conda activate mdtraj
-
 cd $OUTPUT_DIR
-
-python3 /home/wesg/openmm_scripts/mdtraj_metrics/superpose.py \
-    -i $TRAJECTORY \
-    -r $OPENMM_INPUT
-
-SUPERPOSED="$OUTPUT_DIR/output_superposed.pdb"
-MDTRAJ_METRICS_OUTPUT='mdtrajanalysis.csv'
-
-python3 /home/wesg/openmm_scripts/mdtraj_metrics/allstats.py \
-    -i $SUPERPOSED \
-    -r $OPENMM_INPUT \
-    -o $MDTRAJ_METRICS_OUTPUT
-
+pigz *.pdb
+conda deactivate 
+exit

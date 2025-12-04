@@ -47,17 +47,7 @@ python3 ~/openmm_scripts/pullcomplex_md.py \
     --pull-force $FORCE
 
 # Don't do the rest for troubleshooting only openmm
-exit 
-
-# Get metrics from output.pdb with mdtraj
-conda activate mdtraj
-
 cd $OUTPUT_DIR
-
-TRAJECTORY="*.pdb"
-MDTRAJ_METRICS_OUTPUT='mdtrajanalysis.csv'
-
-python3 /home/wesg/openmm_scripts/mdtraj_metrics/allstats.py \
-    -i $TRAJECTORY \
-    -r $INPUT_FILE \
-    -o $MDTRAJ_METRICS_OUTPUT
+pigz *.pdb
+conda deactivate 
+exit
