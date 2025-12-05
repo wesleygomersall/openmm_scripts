@@ -19,9 +19,9 @@
 # Run 50ns long simulation with 1000 data entries, add explicit solvent
 # After the trajectory is created, superpose it and calculate metrics with mdtraj 
 
-if [ $# != 4 ]; then
-    echo "Supply 4 arguments in the following order:"
-    echo "--input-pdb --output-dir --simulation-name --pull-force"
+if [ $# != 5 ]; then
+    echo "Supply 5 arguments in the following order:"
+    echo "--input-pdb --output-dir --simulation-name --pull-force --chain-info-file"
     exit
 fi
 
@@ -29,6 +29,7 @@ OPENMM_INPUT=$1
 OUT_PARENT_DIR=$2
 NAME=$3
 FORCE=$4
+CHINFO=$5
 
 mkdir -p $OUT_PARENT_DIR
 
@@ -48,6 +49,15 @@ python3 ~/openmm_scripts/pullcomplex_md.py \
     --pull-force $FORCE
 
 cd $OUTPUT_DIR
-pigz *.pdb
 conda deactivate 
+
+conda activate mdtraj
+
+DISP_SCRIPT=~/openmm_scripts/mdtraj_metrics/displacement.py
+RMSD_SCRIPT=~/openmm_scripts/mdtraj_metrics/rmsd.py
+python3 $DISP_SCRIPT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
+python3 $RMSD_SCRIPT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
+
+conda deactivate 
+pigz *.pdb
 exit

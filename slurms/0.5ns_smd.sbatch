@@ -18,9 +18,9 @@
 # Monday, 01 December, 2025, 11:37:13 
 # Run 0.5ns long simulation for troubleshoot
 
-if [ $# != 4 ]; then
-    echo "Supply 4 arguments in the following order:"
-    echo "--input-pdb --output-dir --simulation-name --pull-force"
+if [ $# != 5 ]; then
+    echo "Supply 5 arguments in the following order:"
+    echo "--input-pdb --output-dir --simulation-name --pull-force --chain-info-file"
     exit
 fi
 
@@ -46,8 +46,16 @@ python3 ~/openmm_scripts/pullcomplex_md.py \
     --add-water \
     --pull-force $FORCE
 
-# Don't do the rest for troubleshooting only openmm
 cd $OUTPUT_DIR
-pigz *.pdb
 conda deactivate 
+
+conda activate mdtraj
+
+DISP_SCRIPT=~/openmm_scripts/mdtraj_metrics/displacement.py
+RMSD_SCRIPT=~/openmm_scripts/mdtraj_metrics/rmsd.py
+python3 $DISP_SCRIPT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
+python3 $RMSD_SCRIPT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
+
+conda deactivate 
+pigz *.pdb
 exit
