@@ -143,6 +143,64 @@ system = forcefield.createSystem(modeller.topology,
                                  nonbondedCutoff=1*nanometer, 
                                  removeCMMotion=True) 
 
+t0_protein_center = center_of_mass(modeller.positions, system,
+        [a for i in protein for a in i.atoms()])
+t0_ligand_center = center_of_mass(modeller.positions, system,
+        [a for i in ligand for a in i.atoms()])
+log.write(f"Initial protein center of mass: {t0_protein_center}\n")
+log.write(f"Initial ligand center of mass: {t0_ligand_center}\n")
+
+# Enforce a sphere boundary of radius 10nm
+sphere_container = container_restraint(range(system.getNumParticles()), 10)
+system.addForce(sphere_container)
+log.write(f"Spherical container of radius 10 nm added.\n") 
+
+integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
+
+simulation = Simulation(modeller.topology, system, integrator, openmm.Platform.getPlatformByName('CUDA'))
+simulation.context.setPositions(modeller.positions)
+
+log.write(f"Temperature (K): {temperature}\n")
+log.write(f"Pressure (atm): {pressure}\n")
+t0_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+log.write(f"Initial potential energy: {t0_sim_energy}\n")
+
+simulation.minimizeEnergy()
+
+# NVT (2 fs * 10000 = 20 picoseconds)
+simulation.step(10000)
+log.write(f"NVT equillibration for 10000 time steps of {args.timestep} fs complete.\n")
+
+# NPT (2 fs * 10000 = 20 picoseconds)
+system.addForce(MonteCarloBarostat(1*bar, 300*kelvin))
+simulation.context.reinitialize(preserveState=True)
+simulation.step(10000)
+log.write(f"NPT equillibration for 10000 time steps of {args.timestep} fs complete.\n")
+
+minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+log.write(f"Potential energy after minimization and equillibration: {minimized_sim_energy}\n")
+
+simulation.reporters.append(PDBReporter(output_pdb_path, args.steps // 100)) # only store 100 frames in trajectory pdb
+simulation.reporters.append(StateDataReporter(output_energy, 
+                                              store, 
+                                              step=True, 
+                                              time=True,
+                                              potentialEnergy=True, 
+                                              kineticEnergy=True,
+                                              totalEnergy=True,
+                                              temperature=True,
+                                              elapsedTime=True,
+                                              progress=True,
+                                              remainingTime=True,
+                                              totalSteps=args.steps))
+
+
+
+# Advance simulation 500k steps (to 0.5 ns for default 2fs step size)
+# 2 fs * 500000 steps = 500 picoseconds 
+simulation.step(500000)
+
+# Add movement suppression and pull force after adjust period
 if args.suppress_specific == '': 
     '''
     Cannot use constraints (contraints=HBonds in
@@ -188,56 +246,26 @@ if args.suppress_specific != '':
     else: 
         log.write(f"Holding residue alpha carbons: None!\n")
 
-t0_protein_center = center_of_mass(modeller.positions, system,
+pullstart_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
-t0_ligand_center = center_of_mass(modeller.positions, system,
+pullstart_ligand_center = center_of_mass(modeller.positions, system,
         [a for i in ligand for a in i.atoms()])
-log.write(f"Initial protein center of mass: {t0_protein_center}\n")
-log.write(f"Initial ligand center of mass: {t0_ligand_center}\n")
+log.write(f"Protein center of mass at pull start: {pullstart_protein_center}\n")
+log.write(f"Ligand center of mass at pull start: {pullstart_ligand_center}\n")
 
 # Add custom force pulling on the ligand atoms to the system
 pull_atoms = [atom.index for residue in ligand for atom in residue.atoms()]
-pull_direction = t0_ligand_center - t0_protein_center
+pull_direction = pullstart_ligand_center - pullstart_protein_center
 pull_direction = pull_direction / np.linalg.norm(pull_direction) # make unit vector
 pullforce = custom_force(pull_direction, pull_atoms, args.pull_force)
 system.addForce(pullforce)
 log.write(f"Pull force {args.pull_force} kcal/mole/Angstrom added in {pull_direction} direction.\n")
 
-# Enforce a sphere boundary of radius 10nm
-sphere_container = container_restraint(range(system.getNumParticles()), 10)
-system.addForce(sphere_container)
-log.write(f"Spherical container of radius 10 nm added.\n") 
-
-integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
-
-simulation = Simulation(modeller.topology, system, integrator, openmm.Platform.getPlatformByName('CUDA'))
-simulation.context.setPositions(modeller.positions)
-
-log.write(f"Temperature (K): {temperature}\n")
-log.write(f"Pressure (atm): {pressure}\n")
-t0_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-log.write(f"Initial potential energy: {t0_sim_energy}\n")
-
-simulation.minimizeEnergy()
-minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-log.write(f"Potential energy after minimization: {minimized_sim_energy}\n")
-
+log.write(f"Will run to total steps, time/step of:\n")
 log.write(f"{args.steps} steps\n")
 log.write(f"Time step: {tstep}\n")
 log.write(f"energy.csv rows = {store}\n")
 
-simulation.reporters.append(PDBReporter(output_pdb_path, args.steps // 100)) # only store 100 frames in trajectory pdb
-simulation.reporters.append(StateDataReporter(output_energy, 
-                                              store, 
-                                              step=True, 
-                                              time=True,
-                                              potentialEnergy=True, 
-                                              kineticEnergy=True,
-                                              totalEnergy=True,
-                                              temperature=True,
-                                              elapsedTime=True,
-                                              progress=True,
-                                              remainingTime=True,
-                                              totalSteps=args.steps))
-
-simulation.step(args.steps)
+# Advance simulation (args.steps minus X steps / calc steps from time from above)
+if args.steps < 500000: args.steps = 500000 + 20000 # minimum 20k time frames with force applied.
+simulation.step(args.steps - 500000)
