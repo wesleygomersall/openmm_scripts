@@ -139,8 +139,10 @@ if args.add_water:
 
 # create system needs to be after adding solvent and hydrogens
 system = forcefield.createSystem(modeller.topology, 
-                                 nonbondedMethod=app.CutoffNonPeriodic, 
+                                 nonbondedMethod=app.PME, # barostat requires
+                                 # nonbondedMethod=app.CutoffNonPeriodic, 
                                  nonbondedCutoff=1*nanometer, 
+                                 hydrogenMass=1.5*amu, # for larger timestep
                                  removeCMMotion=True) 
 
 t0_protein_center = center_of_mass(modeller.positions, system,
@@ -150,15 +152,23 @@ t0_ligand_center = center_of_mass(modeller.positions, system,
 log.write(f"Initial protein center of mass: {t0_protein_center}\n")
 log.write(f"Initial ligand center of mass: {t0_ligand_center}\n")
 
-# Enforce a sphere boundary of radius 10nm
-sphere_container = container_restraint(range(system.getNumParticles()), 10)
-system.addForce(sphere_container)
-log.write(f"Spherical container of radius 10 nm added.\n") 
-
 integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
 
 simulation = Simulation(modeller.topology, system, integrator, openmm.Platform.getPlatformByName('CUDA'))
 simulation.context.setPositions(modeller.positions)
+
+# Enforce a sphere boundary with radius determined by periodic box
+state = simulation.context.getState(getPositions=True)
+perbox_a, perbox_b, perbox_c = state.getPeriodicBoxVectors()
+max_radius = 1.0 * min(np.linalg.norm(perbox_a), 
+                       np.linalg.norm(perbox_b), 
+                       np.linalg.norm(perbox_c))
+
+# sphere_container = container_restraint(range(system.getNumParticles()), max_radius)
+contain_atoms = [a.index for i in protein for a in i.atoms()] + [a.index for i in ligand for a in i.atoms()]
+sphere_container = container_restraint(contain_atoms, max_radius)
+system.addForce(sphere_container)
+log.write(f"Spherical container of radius {max_radius} nm added.\n") 
 
 log.write(f"Temperature (K): {temperature}\n")
 log.write(f"Pressure (atm): {pressure}\n")
@@ -172,8 +182,8 @@ simulation.step(10000)
 log.write(f"NVT equillibration for 10000 time steps of {args.timestep} fs complete.\n")
 
 # NPT (2 fs * 10000 = 20 picoseconds)
-system.addForce(MonteCarloBarostat(1*bar, 300*kelvin))
-simulation.context.reinitialize(preserveState=True)
+system.addForce(MonteCarloBarostat(1*bar, 300*kelvin, 25))
+# simulation.context.reinitialize(preserveState=True)
 simulation.step(10000)
 log.write(f"NPT equillibration for 10000 time steps of {args.timestep} fs complete.\n")
 
