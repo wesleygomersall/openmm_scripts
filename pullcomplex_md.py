@@ -142,7 +142,7 @@ system = forcefield.createSystem(modeller.topology,
                                  nonbondedMethod=app.PME, # barostat requires
                                  # nonbondedMethod=app.CutoffNonPeriodic, 
                                  nonbondedCutoff=1*nanometer, 
-                                 hydrogenMass=1.5*amu, # for larger timestep
+                                 # hydrogenMass=1.5*amu, # HMR for larger timestep
                                  removeCMMotion=True) 
 
 t0_protein_center = center_of_mass(modeller.positions, system,
