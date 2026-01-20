@@ -25,9 +25,6 @@ class Traject:
             self.input_traj = md.load(in_trajectory).remove_solvent()
             assert self.input_traj.n_frames > 1
 
-        # For periodic boundary
-        self.input_traj.image_molecules(inplace = True)
-
         # Reference is first frame of input trajectory if no reference file is provided
         self.reference = self.input_traj[0] if reference_file == "" else md.load(reference_file).remove_solvent()
 
@@ -55,6 +52,13 @@ class Traject:
                         name = "reset name, shouldn't be saved!"
                     linenumber += 1
         self.check_chain_overlap()
+
+        # For periodic boundary
+        anchors = []
+        for index in self.chains[0][1]: # anchor is first chain in chain info file
+            anchors.append(self.input_traj.topology.atom(index))
+        self.input_traj.image_molecules(inplace = True, 
+                                        anchor_molecules = [set(anchors)])
 
     def check_chain_overlap(self):
         # ensure no overlap between chains

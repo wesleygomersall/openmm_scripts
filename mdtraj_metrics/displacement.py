@@ -6,24 +6,13 @@ import mdtraj as md
 import collect_in
 
 def displacement(trajectory, reference, chains): 
-    '''
-    Track the displacement between chains center of masses throughout the
-    states of a trajectory.
-    '''
-    df = pd.DataFrame()
-    for chain_name, residues in chains: 
-        if len(residues) > 1: 
-            selection_string = f"index {residues[0] - 1} to {residues[-1] - 1}"
-        else: 
-            selection_string = f"index {residues[0] - 1}"
+    # compute all Ca-Ca distances between chains
+    pairs = trajectory.topology.select_pairs(selection1='chainid 0 and name CA', 
+                                             selection2='chainid 1 and name CA')
 
-        com = md.compute_center_of_mass(trajectory, select=selection_string)
-        ref_com = md.compute_center_of_mass(reference, select=selection_string)
-        displacement = [np.linalg.norm(np.subtract(c, ref_com)) for c in com]
-
-        col_name = chain_name + "_displacement(nm)"
-        df[col_name] = displacement
-
+    displacement = md.compute_distances(trajectory, pairs)
+    row_means = np.mean(displacement, axis=1)
+    df = pd.DataFrame(row_means, columns=['Ligand Displacement'])
     return df
     
 def main():
