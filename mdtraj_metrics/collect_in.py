@@ -10,7 +10,7 @@ class Traject:
     self.input_traj (mdtraj trajectory object) 
     self.input_traj_filepath (/path/to/trajectory.pdb) 
     self.reference (mdtraj single frame pose)
-    self.chains (list of tuples: (chain name, atoms in chain) 
+    self.chains (list of tuples: (chain name, atoms in chain) )
     '''
 
     def __init__(self, in_trajectory, reference_file, chain_file):
@@ -24,6 +24,9 @@ class Traject:
         else:
             self.input_traj = md.load(in_trajectory).remove_solvent()
             assert self.input_traj.n_frames > 1
+
+        # For periodic boundary
+        self.input_traj.image_molecules(inplace = True)
 
         # Reference is first frame of input trajectory if no reference file is provided
         self.reference = self.input_traj[0] if reference_file == "" else md.load(reference_file).remove_solvent()
