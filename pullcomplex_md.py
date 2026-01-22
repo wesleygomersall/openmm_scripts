@@ -39,60 +39,53 @@ def center_of_mass(pos, system, atoms):
     center_of_mass = sum([m * pos[i.index] for i, m in zip(atoms, masses)]) / masses.sum()
     return center_of_mass
 
-def custom_force(direction, atoms, force_constant):
-    '''
-    Define custom force pulling on a group of atoms
+# def custom_force(direction, atoms, force_constant):
+    # '''
+    # Define custom force pulling on a group of atoms
+# 
+    # Input(s): 
+        # direction (list):       (x, y, z) vector for direction of force.
+        # atoms (str):            List of atoms ids to apply force to.
+        # f_constant (float):     Constant force * kcal/mole/A
+# 
+    # Output(s): 
+        # openmm.CustomCentroidBondForce object
+    # '''
+    # force_constant *= kilocalories_per_mole / angstroms
 
-    Input(s): 
-        direction (list):       (x, y, z) vector for direction of force.
-        atoms (str):            List of atoms ids to apply force to.
-        f_constant (float):     Constant force * kcal/mole/A
+    # fx = direction[0]
+    # fy = direction[1]
+    # fz = direction[2]
 
-    Output(s): 
-        openmm.CustomCentroidBondForce object
-    '''
-    force_constant *= kilocalories_per_mole / angstroms
+    # pull = CustomCentroidBondForce(1, "-1 * force_constant * (x1*fx + y1*fy + z1*fz)")
+    # pull.addGlobalParameter("force_constant", force_constant)
+    # pull.addGlobalParameter("fx", fx)
+    # pull.addGlobalParameter("fy", fy)
+    # # pull.addGlobalParameter("fz", fz)
+    # pull.addGroup(atoms)
+    # pull.addBond([0])
+# 
+    # return pull
 
-    fx = direction[0]
-    fy = direction[1]
-    fz = direction[2]
+# def container_restraint(atoms, radius: float):
+    # '''
+    # Define force to contain ligand chain to a spherical container. 
+# 
+    # Input(s): 
+        # atoms (list):           List of atoms ids to apply force to.
+        # radius (float):         Radius of container in nm. 
 
-    pull = CustomCentroidBondForce(1, "-1 * force_constant * (x1*fx + y1*fy + z1*fz)")
-    pull.addGlobalParameter("force_constant", force_constant)
-    pull.addGlobalParameter("fx", fx)
-    pull.addGlobalParameter("fy", fy)
-    pull.addGlobalParameter("fz", fz)
-    pull.addGroup(atoms)
-    pull.addBond([0])
-
-    return pull
-
-def container_restraint(atoms, radius: float):
-    '''
-    Define force to contain ligand chain to a spherical container. 
-
-    Input(s): 
-        atoms (list):           List of atoms ids to apply force to.
-        radius (float):         Radius of container in nm. 
-
-    Output(s): 
-        openmm.CustomExternalForce object
-    '''
-    radius *= nanometer
-    force_expression = "container_force*max(0, r - radius)^2; r = sqrt(x^2 + y^2 + z^2) "
-    container = CustomExternalForce(force_expression)
-    container.addGlobalParameter("radius", radius) 
-    container.addGlobalParameter("container_force", 100.0 * kilocalories_per_mole / angstroms) 
-    for p in atoms: 
-        container.addParticle(p, [])
-    return container
-
-# def COM_restraint(atoms, radius):
+    # Output(s): 
+        # openmm.CustomExternalForce object
+    # '''
     # radius *= nanometer
-    # force_expression = "COM_restraint_force * max(0, d-rad)^2; d = distance(g1, g2) " 
-    # restraint = CustomCentroidBondForce(force_expression) 
-    # restraint.addGlobalParameter("rad", radius)
-    # restraint.addGlobalParameter("COM_restraint_force", 100.0 * kilocalories_per_mole / angstroms) 
+    # force_expression = "container_force*max(0, r - radius)^2; r = sqrt(x^2 + y^2 + z^2) "
+    # # container = CustomExternalForce(force_expression)
+    # container.addGlobalParameter("radius", radius) 
+    # container.addGlobalParameter("container_force", 100.0 * kilocalories_per_mole / angstroms) 
+    # for p in atoms: 
+        # container.addParticle(p, [])
+    # return container
 
 if not os.path.exists(args.output):
     os.mkdir(args.output)
@@ -142,8 +135,8 @@ system = forcefield.createSystem(modeller.topology,
                                  nonbondedMethod=app.PME, # barostat requires
                                  # nonbondedMethod=app.CutoffNonPeriodic, 
                                  nonbondedCutoff=1*nanometer, 
-                                 # hydrogenMass=1.5*amu, # HMR for larger timestep
-                                 removeCMMotion=True) 
+                                 # hydrogenMass=1.5*amu, # HMR
+                                 removeCMMotion=False) 
 
 t0_protein_center = center_of_mass(modeller.positions, system,
         [a for i in protein for a in i.atoms()])
@@ -151,64 +144,6 @@ t0_ligand_center = center_of_mass(modeller.positions, system,
         [a for i in ligand for a in i.atoms()])
 log.write(f"Initial protein center of mass: {t0_protein_center}\n")
 log.write(f"Initial ligand center of mass: {t0_ligand_center}\n")
-
-integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
-
-simulation = Simulation(modeller.topology, system, integrator, openmm.Platform.getPlatformByName('CUDA'))
-simulation.context.setPositions(modeller.positions)
-
-# Enforce a sphere boundary with radius determined by periodic box
-state = simulation.context.getState(getPositions=True)
-perbox_a, perbox_b, perbox_c = state.getPeriodicBoxVectors()
-max_radius = 1.0 * min(np.linalg.norm(perbox_a), 
-                       np.linalg.norm(perbox_b), 
-                       np.linalg.norm(perbox_c))
-
-# sphere_container = container_restraint(range(system.getNumParticles()), max_radius)
-contain_atoms = [a.index for i in protein for a in i.atoms()] + [a.index for i in ligand for a in i.atoms()]
-sphere_container = container_restraint(contain_atoms, max_radius)
-system.addForce(sphere_container)
-log.write(f"Spherical container of radius {max_radius} nm added.\n") 
-
-log.write(f"Temperature (K): {temperature}\n")
-log.write(f"Pressure (atm): {pressure}\n")
-t0_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-log.write(f"Initial potential energy: {t0_sim_energy}\n")
-
-simulation.minimizeEnergy()
-
-# NVT (2 fs * 10000 = 20 picoseconds)
-simulation.step(10000)
-log.write(f"NVT equillibration for 10000 time steps of {args.timestep} fs complete.\n")
-
-# NPT (2 fs * 10000 = 20 picoseconds)
-system.addForce(MonteCarloBarostat(1*bar, 300*kelvin, 25))
-# simulation.context.reinitialize(preserveState=True)
-simulation.step(10000)
-log.write(f"NPT equillibration for 10000 time steps of {args.timestep} fs complete.\n")
-
-minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
-log.write(f"Potential energy after minimization and equillibration: {minimized_sim_energy}\n")
-
-simulation.reporters.append(PDBReporter(output_pdb_path, args.steps // 100)) # only store 100 frames in trajectory pdb
-simulation.reporters.append(StateDataReporter(output_energy, 
-                                              store, 
-                                              step=True, 
-                                              time=True,
-                                              potentialEnergy=True, 
-                                              kineticEnergy=True,
-                                              totalEnergy=True,
-                                              temperature=True,
-                                              elapsedTime=True,
-                                              progress=True,
-                                              remainingTime=True,
-                                              totalSteps=args.steps))
-
-
-
-# Advance simulation 500k steps (to 0.5 ns for default 2fs step size)
-# 2 fs * 500000 steps = 500 picoseconds 
-simulation.step(500000)
 
 # Add movement suppression and pull force after adjust period
 if args.suppress_specific == '': 
@@ -267,8 +202,72 @@ log.write(f"Ligand center of mass at pull start: {pullstart_ligand_center}\n")
 pull_atoms = [atom.index for residue in ligand for atom in residue.atoms()]
 pull_direction = pullstart_ligand_center - pullstart_protein_center
 pull_direction = pull_direction / np.linalg.norm(pull_direction) # make unit vector
-pullforce = custom_force(pull_direction, pull_atoms, args.pull_force)
-system.addForce(pullforce)
+# pullforce = custom_force(pull_direction, pull_atoms, 0) # update this later
+log.write(f"Initializing external force. Start value 0 kcal/mol/A.\n")
+# system.addForce(pullforce)
+
+restraint = CustomExternalForce('k*periodicdistance(x, y, z, x0, y0, z0)^2')
+system.addForce(restraint)
+restraint.addGlobalParameter('k', 0 * kilocalories_per_mole / angstroms)
+restraint.addPerParticleParameter('x0')
+restraint.addPerParticleParameter('y0')
+restraint.addPerParticleParameter('z0')
+
+# Apply only to the first alpha carbon of ligand 
+for atom in ligand[0].atoms():
+    if atom.name == 'CA': # modify for RNA ligand 
+        restraint.addParticle(atom.index, pdb.positions[atom.index] + 3 * pull_direction * nanometer)
+
+# Must create system after adding all of the forces.
+integrator = LangevinIntegrator(temperature, 1/picosecond, tstep) 
+
+simulation = Simulation(modeller.topology, system, integrator, openmm.Platform.getPlatformByName('CUDA'))
+simulation.context.setPositions(modeller.positions)
+
+log.write(f"Temperature (K): {temperature}\n")
+log.write(f"Pressure (atm): {pressure}\n")
+t0_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+log.write(f"Initial potential energy: {t0_sim_energy}\n")
+
+simulation.minimizeEnergy()
+
+# NVT (2 fs * 10000 = 20 picoseconds)
+simulation.step(10000)
+log.write(f"NVT equillibration for 10000 time steps of {args.timestep} fs complete.\n")
+
+# NPT (2 fs * 10000 = 20 picoseconds)
+system.addForce(MonteCarloBarostat(1*bar, 300*kelvin, 25))
+simulation.context.reinitialize(preserveState=True)
+simulation.step(10000)
+log.write(f"NPT equillibration for 10000 time steps of {args.timestep} fs complete.\n")
+
+minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
+log.write(f"Potential energy after minimization and equillibration: {minimized_sim_energy}\n")
+
+simulation.reporters.append(PDBReporter(output_pdb_path, args.steps // 100)) # only store 100 frames in trajectory pdb
+simulation.reporters.append(StateDataReporter(output_energy, 
+                                              store, 
+                                              step=True, 
+                                              time=True,
+                                              potentialEnergy=True, 
+                                              kineticEnergy=True,
+                                              totalEnergy=True,
+                                              temperature=True,
+                                              elapsedTime=True,
+                                              progress=True,
+                                              remainingTime=True, totalSteps=args.steps)) # Advance simulation 500k steps (to 0.5 ns for default 2fs step size) 2 fs * 500000 steps = 500 picoseconds simulation.step(500000)
+
+
+
+# Advance simulation 500k steps (to 0.5 ns for default 2fs step size)
+# 2 fs * 500000 steps = 500 picoseconds 
+simulation.step(500000)
+
+# Add pull force with the specified strength
+simulation.context.setParameter('k', args.pull_force * kilocalories_per_mole / angstroms)
+# simulation.context.setParameter('force_constant', 
+                                # args.pull_force * kilocalories_per_mole / angstroms)
+# pullforce.updateParametersInContext(simulation.context)
 log.write(f"Pull force {args.pull_force} kcal/mole/Angstrom added in {pull_direction} direction.\n")
 
 log.write(f"Will run to total steps, time/step of:\n")
