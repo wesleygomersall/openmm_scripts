@@ -39,54 +39,6 @@ def center_of_mass(pos, system, atoms):
     center_of_mass = sum([m * pos[i.index] for i, m in zip(atoms, masses)]) / masses.sum()
     return center_of_mass
 
-# def custom_force(direction, atoms, force_constant):
-    # '''
-    # Define custom force pulling on a group of atoms
-# 
-    # Input(s): 
-        # direction (list):       (x, y, z) vector for direction of force.
-        # atoms (str):            List of atoms ids to apply force to.
-        # f_constant (float):     Constant force * kcal/mole/A
-# 
-    # Output(s): 
-        # openmm.CustomCentroidBondForce object
-    # '''
-    # force_constant *= kilocalories_per_mole / angstroms
-
-    # fx = direction[0]
-    # fy = direction[1]
-    # fz = direction[2]
-
-    # pull = CustomCentroidBondForce(1, "-1 * force_constant * (x1*fx + y1*fy + z1*fz)")
-    # pull.addGlobalParameter("force_constant", force_constant)
-    # pull.addGlobalParameter("fx", fx)
-    # pull.addGlobalParameter("fy", fy)
-    # # pull.addGlobalParameter("fz", fz)
-    # pull.addGroup(atoms)
-    # pull.addBond([0])
-# 
-    # return pull
-
-# def container_restraint(atoms, radius: float):
-    # '''
-    # Define force to contain ligand chain to a spherical container. 
-# 
-    # Input(s): 
-        # atoms (list):           List of atoms ids to apply force to.
-        # radius (float):         Radius of container in nm. 
-
-    # Output(s): 
-        # openmm.CustomExternalForce object
-    # '''
-    # radius *= nanometer
-    # force_expression = "container_force*max(0, r - radius)^2; r = sqrt(x^2 + y^2 + z^2) "
-    # # container = CustomExternalForce(force_expression)
-    # container.addGlobalParameter("radius", radius) 
-    # container.addGlobalParameter("container_force", 100.0 * kilocalories_per_mole / angstroms) 
-    # for p in atoms: 
-        # container.addParticle(p, [])
-    # return container
-
 if not os.path.exists(args.output):
     os.mkdir(args.output)
 
@@ -133,9 +85,7 @@ if args.add_water:
 # create system needs to be after adding solvent and hydrogens
 system = forcefield.createSystem(modeller.topology, 
                                  nonbondedMethod=app.PME, # barostat requires
-                                 # nonbondedMethod=app.CutoffNonPeriodic, 
                                  nonbondedCutoff=1*nanometer, 
-                                 # hydrogenMass=1.5*amu, # HMR
                                  removeCMMotion=False) 
 
 t0_protein_center = center_of_mass(modeller.positions, system,
@@ -199,12 +149,9 @@ log.write(f"Protein center of mass at pull start: {pullstart_protein_center}\n")
 log.write(f"Ligand center of mass at pull start: {pullstart_ligand_center}\n")
 
 # Add custom force pulling on the ligand atoms to the system
-pull_atoms = [atom.index for residue in ligand for atom in residue.atoms()]
 pull_direction = pullstart_ligand_center - pullstart_protein_center
 pull_direction = pull_direction / np.linalg.norm(pull_direction) # make unit vector
-# pullforce = custom_force(pull_direction, pull_atoms, 0) # update this later
 log.write(f"Initializing external force. Start value 0 kcal/mol/A.\n")
-# system.addForce(pullforce)
 
 restraint = CustomExternalForce('k*periodicdistance(x, y, z, x0, y0, z0)^2')
 system.addForce(restraint)
@@ -213,7 +160,7 @@ restraint.addPerParticleParameter('x0')
 restraint.addPerParticleParameter('y0')
 restraint.addPerParticleParameter('z0')
 
-# Apply only to the first alpha carbon of ligand 
+# Apply pull to only to the first alpha carbon of ligand 
 for atom in ligand[0].atoms():
     if atom.name == 'CA': # modify for RNA ligand 
         restraint.addParticle(atom.index, pdb.positions[atom.index] + 3 * pull_direction * nanometer)
@@ -263,11 +210,8 @@ simulation.reporters.append(StateDataReporter(output_energy,
 # 2 fs * 500000 steps = 500 picoseconds 
 simulation.step(500000)
 
-# Add pull force with the specified strength
+# Add nonzero pull force with the specified strength
 simulation.context.setParameter('k', args.pull_force * kilocalories_per_mole / angstroms)
-# simulation.context.setParameter('force_constant', 
-                                # args.pull_force * kilocalories_per_mole / angstroms)
-# pullforce.updateParametersInContext(simulation.context)
 log.write(f"Pull force {args.pull_force} kcal/mole/Angstrom added in {pull_direction} direction.\n")
 
 log.write(f"Will run to total steps, time/step of:\n")
