@@ -30,11 +30,11 @@ RMSD_SCRIPT=~/openmm_scripts/mdtraj_metrics/rmsd.py
 RMSD_DELTAS=~/openmm_scripts/mdtraj_metrics/delta_rmsd.py
 REM_SOLVENT=~/openmm_scripts/mdtraj_metrics/remove_solvent.py
 RMSF_SCRIPT=~/openmm_scripts/mdtraj_metrics/rmsf.py
-python3 $DISP_SCRIPT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
-python3 $RMSD_SCRIPT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
-python3 $RMSD_DELTAS -i output.pdb -r $OPENMM_INPUT -c $CHINFO
-python3 $RMSF_SCRIPT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
-python3 $REM_SOLVENT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
+python3 $DISP_SCRIPT -i $TRAJ -r $REF -c $CHINFO
+python3 $RMSD_SCRIPT -i $TRAJ -r $REF -c $CHINFO
+python3 $RMSD_DELTAS -i $TRAJ -r $REF -c $CHINFO
+python3 $RMSF_SCRIPT -i $TRAJ -r $REF -c $CHINFO
+python3 $REM_SOLVENT -i $TRAJ -r $REF -c $CHINFO
 
 conda deactivate 
 pigz *.pdb
