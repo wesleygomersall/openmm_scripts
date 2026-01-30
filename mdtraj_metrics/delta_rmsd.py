@@ -39,25 +39,19 @@ def delta_rmsd(trajectory, reference, chains, bb_only = False):
                                       chain_selection)
             chain_rmsd.append(frame_drmsd[0]) 
 
-        chain_rmsd = chain_rmsd * 10 #(output in A)
-
+        # (output in A)
+        rmsd_A = [item * 10.0 for item in chain_rmsd] 
         col_name = chain_name + "_RMSD(A)"
-        df[col_name] = chain_rmsd
+        df[col_name] = rmsd_A
 
     return df
 
 def main(): 
     data = collect_in.get_traj_inputs()
     rmsds = delta_rmsd(data.input_traj, data.reference, data.chains)
-
-    if data.input_traj_filepath.endswith('.pdb'):
-        outfilepath = data.input_traj_filepath.strip('.pdb') + "_deltaRMSDs.csv"
-    elif data.input_traj_filepath.endswith('.pdb.gz'):
-        outfilepath = data.input_traj_filepath.strip('.pdb.gz') + "_deltaRMSDs.csv"
-    else: 
-        raise TypeError("{data.input_traj_filepath} file suffix not recognized. Use .pdb or .pdb.gz file.")
-
-    rmsds.to_csv(outfilepath)
+    rmsds.to_csv(collect_in.get_output_path(data.input_traj_filepath, 
+                                            "_deltaRMSDs", 
+                                            ".csv"))
 
 if __name__ == "__main__":
     main()

@@ -18,7 +18,9 @@ def displacement(trajectory, reference, chains):
 def main():
     data = collect_in.get_traj_inputs()
     displacements = displacement(data.input_traj, data.reference, data.chains)
-    outfilepath = data.input_traj_filepath.strip('.pdb') + "_displacement.csv"
+    outfilepath = collect_in.get_output_path(data.input_traj_filepath, 
+                                             "_displacement", 
+                                             ".csv")
     displacements.to_csv(outfilepath)
 
 if __name__ == "__main__":

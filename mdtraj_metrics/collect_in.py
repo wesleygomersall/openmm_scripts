@@ -79,3 +79,14 @@ def get_traj_inputs():
     my_traj = Traject(args.input, args.ref, args.chains)
 
     return my_traj
+
+def get_output_path(in_path: str, 
+                    new_label: str,
+                    new_ext: str,
+                    possible_exts: list = ['.pdb', '.pdb.gz']):
+
+    for ext in possible_exts: 
+        if in_path.endswith(ext):
+            return in_path.strip(ext) + new_label + new_ext
+    raise TypeError("{in_path} file suffix not recognized. Use .pdb or .pdb.gz file.")
+    return 1
