@@ -7,30 +7,35 @@
 #SBATCH --partition=compute
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=16G
+#SBATCH --mem=32G
 
 # Wesley Gomersall
-# Tue, 22 Jul 2025 18:11:45 -0700
-# 
-# Get metrics for SMD run, create csv with the following information: 
-# Step,Displacement(nm),RMSD(A),aCarbon-aCarbon Distance(nm)
+# Friday, 30 January, 2026, 14:17:39 
 
-if [ $# != 4 ]; then
-    echo "Supply 4 arguments in the following order:"
-    echo "--path --trjectory-pdb --reference-pdb --output-name"
+if [ $# != 3 ]; then
+    echo "Supply 3 arguments in the following order:"
+    echo "--trajectory-pdb --reference-pdb --chain-info-file"
     exit
 fi
 
-MYDIR=$1
-TRAJECTORY=$2
-REFERENCE=$3
-OUTPUT=$4
-
-SCRIPT="$HOME/openmm_scripts/mdtraj_metrics/allstats.py"
+TRAJ=$1
+REF=$2
+CHINFO=$3
 
 source ~/miniforge3/etc/profile.d/conda.sh # for conda to work
 conda activate mdtraj
 
-cd $MYDIR
+DISP_SCRIPT=~/openmm_scripts/mdtraj_metrics/displacement.py
+RMSD_SCRIPT=~/openmm_scripts/mdtraj_metrics/rmsd.py
+RMSD_DELTAS=~/openmm_scripts/mdtraj_metrics/delta_rmsd.py
+REM_SOLVENT=~/openmm_scripts/mdtraj_metrics/remove_solvent.py
+RMSF_SCRIPT=~/openmm_scripts/mdtraj_metrics/rmsf.py
+python3 $DISP_SCRIPT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
+python3 $RMSD_SCRIPT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
+python3 $RMSD_DELTAS -i output.pdb -r $OPENMM_INPUT -c $CHINFO
+python3 $RMSF_SCRIPT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
+python3 $REM_SOLVENT -i output.pdb -r $OPENMM_INPUT -c $CHINFO
 
-$SCRIPT -i $TRAJECTORY -r $REFERENCE -o $OUTPUT
+conda deactivate 
+pigz *.pdb
+exit
