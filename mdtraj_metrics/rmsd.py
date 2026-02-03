@@ -32,7 +32,8 @@ def rmsd(trajectory, reference, chains, bb_only = False):
 def main(): 
     data = collect_in.get_traj_inputs()
     rmsds = rmsd(data.input_traj, data.reference, data.chains)
-    outfilepath = data.input_traj_filepath.strip('.pdb') + "_RMSDs.csv"
+    outfilepath = collect_in.get_output_path(data.input_traj_filepath,
+                                             "_RMSDs", ".csv")
     rmsds.to_csv(outfilepath)
 
 if __name__ == "__main__":
