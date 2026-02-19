@@ -81,8 +81,9 @@ def contacts(trajectory, cutoff: float = 0.35, countatoms: bool = True):
                                                                         'chainB_resi': chB_atom.residue.index, 
                                                                         'distance': d}])], 
                                                         ignore_index=True)
-            atom_contact_df = pd.concat([atom_contact_df if not atom_contact_df.empty else None,
-                                    frame_contacts], ignore_index=True)
+        atom_contact_df = pd.concat([atom_contact_df if not atom_contact_df.empty else None, 
+                                     frame_contacts], 
+                                    ignore_index=True)
 
     bar.finish()
     return atom_contact_df
