@@ -31,14 +31,6 @@ def contacts(trajectory, cutoff: float = 0.35, countatoms: bool = True):
                                             'distance', 
                                             ])
 
-    res_contact_df = pd.DataFrame(columns=['Frame', 
-                                           'chainA_resn', 
-                                           'chainA_resi', 
-                                           'chainB_resn', 
-                                           'chainB_resi', 
-                                           'distance', 
-                                           ])
-
     chA_res_indices = [residue.index for residue in trajectory.topology.chain(0).residues]
     chB_res_indices = [residue.index for residue in trajectory.topology.chain(1).residues]
 
@@ -56,31 +48,32 @@ def contacts(trajectory, cutoff: float = 0.35, countatoms: bool = True):
 
         for index, d in enumerate(distances[framenum,]):
             if d < cutoff:
-                
-                res_contact_df = pd.concat([res_contact_df if not res_contact_df.empty else None,
-                                            pd.DataFrame([{'Frame':framenum, 
-                                                           'chainA_resn': trajectory.topology.residue(all_pairs[index][0]), 
-                                                           'chainA_resi': all_pairs[index][0], 
-                                                           'chainB_resn': trajectory.topology.residue(all_pairs[index][1]),
-                                                           'chainB_resi': all_pairs[index][1], 
-                                                           'distance': d}])
-                                            ])
 
                 # For pairs within cutoff, loop through atoms in chainA res
                 for atom in trajectory.topology.select(f"resid {all_pairs[index][0]}"):
+                    chA_atom = trajectory.topology.atom(atom)
+                    a_index = chA_atom.index
+                    a_name = chA_atom.name
+                    a_elem = chA_atom.element.name
+                    a_res = chA_atom.residue
+                    a_resnum = chA_atom.residue.index
+
+                    if a_elem == 'hydrogen': continue 
+
                     haystack = [atomid for atomid in trajectory.topology.select(f"resid {all_pairs[index][1]}")] 
                     neighbors = md.compute_neighbors(frame, cutoff, np.array([atom]), haystack, periodic=True)
+
+
                     for i in neighbors[0]: 
-                        if i != atom: 
-                            chA_atom = trajectory.topology.atom(atom)
+                        if i != atom and trajectory.topology.atom(i).element.name != 'hydrogen': 
                             chB_atom = trajectory.topology.atom(i)
                             frame_contacts = pd.concat([frame_contacts if not frame_contacts.empty else None, 
                                                         pd.DataFrame([{'Frame':framenum, 
-                                                                        'chainA_atomID': chA_atom.index, 
-                                                                        'chainA_name': chA_atom.name, 
-                                                                        'chainA_elem': chA_atom.element.name,
-                                                                        'chainA_resn': chA_atom.residue, 
-                                                                        'chainA_resi': chA_atom.residue.index, 
+                                                                        'chainA_atomID': a_index, 
+                                                                        'chainA_name': a_name,
+                                                                        'chainA_elem': a_elem,
+                                                                        'chainA_resn': a_res, 
+                                                                        'chainA_resi': a_resnum, 
                                                                         'chainB_atomID': chB_atom.index, 
                                                                         'chainB_name': chB_atom.name, 
                                                                         'chainB_elem': chB_atom.element.name,
@@ -92,15 +85,43 @@ def contacts(trajectory, cutoff: float = 0.35, countatoms: bool = True):
                                     frame_contacts], ignore_index=True)
 
     bar.finish()
-    return atom_contact_df, res_contact_df
+    return atom_contact_df
+
+def atoms_to_res_contacts(atom_contact_df):
+
+    res_contact_df = pd.DataFrame(columns=['Frame', 
+                                           'chainA_resn', 
+                                           'chainB_resn', 
+                                           'distance', 
+                                           ])
+    
+    maxframe = atom_contact_df['Frame'].max()
+    for i in range(maxframe + 1):
+        temp_df = atom_contact_df.loc[df['Frame'] == i]
+        temp_df['res_pair'] = list(zip(temp_df['chainA_resn'], temp_df['chainB_resn']))
+        unique_pairs = set(temp_df['res_pair'])
+
+        for pair in unique_pairs:
+            min_dist = atom_contact_df.loc[atom_contact_df['res_pair'] == pair]['distance'].min()
+
+            frame_contacts = pd.concat([res_contact_df if not res_contact_df.empty else None, 
+                                        pd.DataFrame([{'Frame': i, 
+                                                       'chainA_resn': pair[0], 
+                                                       'chainB_resn': pair[1], 
+                                                       'distance': min_dist, }])], 
+                                       ignore_index=True)
+
+    return res_contact_df
 
 def main():
     data = collect_in.get_traj_inputs()
-    atom_df, res_df = contacts(data.input_traj, 0.35)
+    atom_df = contacts(data.input_traj, 0.35)
 
     atom_df.to_csv(collect_in.get_output_path(data.input_traj_filepath, 
                                              "_contacts_byatom", 
                                              ".csv"))
+
+    res_df = atoms_to_res_contacts(atom_df)
     res_df.to_csv(collect_in.get_output_path(data.input_traj_filepath, 
                                             "_contacts_byres", 
                                             ".csv"))
