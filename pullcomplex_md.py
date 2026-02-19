@@ -48,6 +48,7 @@ temperature = args.temp * kelvin
 store = args.steps // args.freq
 output_log_path = args.output + "/log.txt"
 output_pdb_path = args.output + "/output.pdb"
+output_dcd_path = args.output + "/output.dcd"
 output_energy = args.output + "/energy.csv"
 
 log = open(output_log_path, 'w') # write run info to this log rather than stdout
@@ -191,7 +192,14 @@ log.write(f"NPT equillibration for 10000 time steps of {args.timestep} fs comple
 minimized_sim_energy = simulation.context.getState(getEnergy=True).getPotentialEnergy()
 log.write(f"Potential energy after minimization and equillibration: {minimized_sim_energy}\n")
 
-simulation.reporters.append(PDBReporter(output_pdb_path, args.steps // 100)) # only store 100 frames in trajectory pdb
+with open(output_pdb_path, 'w') as f:
+    PDBFile.writeFile(simulation.topology, 
+                      simulation.context.getState(getPositions=True).getPositions(),
+                      f)
+
+simulation.reporters.append(DCDReporter(output_dcd_path, args.steps // 1000)) # store 1000 frames in trajectory pdb
+# simulation.reporters.append(PDBReporter(output_pdb_path, args.steps // 1000)) # Used to use pdb reporter
+
 simulation.reporters.append(StateDataReporter(output_energy, 
                                               store, 
                                               step=True, 
