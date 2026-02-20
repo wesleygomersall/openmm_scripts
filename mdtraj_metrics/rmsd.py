@@ -1,30 +1,26 @@
 #!/usr/bin/env python3
 
 import pandas as pd
+import numpy as np
 import mdtraj as md 
 import collect_in
 
-def rmsd(trajectory, reference, chains, bb_only = False): 
+def rmsd(trajectory, reference, chains, bb_only = True): 
     '''
-    Return a data frame with RMSD as separate columns corresponding to the atom
-    groupings in input variable chains from collect_in.Traject.chains.
+    Return a data frame with RMSD as separate columns corresponding to each chain.
     Default to backbone RMSD of the chain(s). 
     '''
     df = pd.DataFrame()
-    for chain_name, residues in chains: 
-        if len(residues) > 1: 
-            selection_string = f"index {residues[0] - 1} to {residues[-1] - 1}"
-        else: 
-            selection_string = f"index {residues[0] - 1}"
+    for chain_num, chain in enumerate(trajectory.topology.chains):
+        indices = trajectory.topology.select(f"chainid {chain_num}")
 
         if bb_only: 
-            selection_string = selection_string + " and backbone" 
+            indices = np.intersect1d(indices, trajectory.topology.select('backbone'))
 
-        chain_selection = trajectory.topology.select(selection_string)
-        chain_rmsd = md.rmsd(trajectory, reference, 0, chain_selection)
+        chain_rmsd = md.rmsd(trajectory, trajectory, 0, indices)
         chain_rmsd = chain_rmsd * 10 #(output in A)
 
-        col_name = chain_name + "_RMSD(A)"
+        col_name = f"chain{chain_num}_RMSD(A)"
         df[col_name] = chain_rmsd
 
     return df

@@ -6,43 +6,29 @@ import collect_in
 
 def delta_rmsd(trajectory, reference, chains, bb_only = False): 
     '''
-    Return a data frame with RMSD as separate columns corresponding to the atom
-    groupings in input variable chains from collect_in.Traject.chains.
-    Delta RMSD is the RMSD between each subsequent frame. The first frame of
-    the simulation utilizes the reference pdb input (there is no previous
-    frame).
-    Default to backbone RMSD of the chain(s). 
+    Return a data frame with delta RMSD as separate columns corresponding to
+    the chains in trajectory. Delta RMSD is the RMSD between each subsequent
+    frame. The first frame of the simulation has delta RMSD of 0. (there is no
+    previous frame). Default to backbone RMSD of the chain(s). 
     '''
     df = pd.DataFrame()
-    for chain_name, residues in chains: 
-        if len(residues) > 1: 
-            selection_string = f"index {residues[0] - 1} to {residues[-1] - 1}"
-        else: 
-            selection_string = f"index {residues[0] - 1}"
 
-        if bb_only: 
-            selection_string = selection_string + " and backbone" 
+    for chain_num, chain in enumerate(trajectory.topology.chains):
+        indices = trajectory.topology.select(f"chainid {chain_num}")
 
-        chain_selection = trajectory.topology.select(selection_string)
-
-        chain_rmsd = []
+        chain_drmsd = []
         for framenum, frame in enumerate(trajectory):
-            if framenum == 0: # first frame 
-                frame_drmsd = md.rmsd(frame, 
-                                      reference, 
-                                      0, 
-                                      chain_selection) 
+            if framenum == 0: 
+                chain_drmsd.append(0) # no previous frame
             else: 
-                frame_drmsd = md.rmsd(frame, 
+                chain_drmsd.append(md.rmsd(frame, 
                                       trajectory,
                                       (framenum - 1), 
-                                      chain_selection)
-            chain_rmsd.append(frame_drmsd[0]) 
+                                      indices)[0]) 
 
-        # (output in A)
-        rmsd_A = [item * 10.0 for item in chain_rmsd] 
-        col_name = chain_name + "_RMSD(A)"
-        df[col_name] = rmsd_A
+        drmsd_A = [item * 10.0 for item in chain_drmsd] 
+        col_name = f"chain{chain_num}_RMSD(A)"
+        df[col_name] = drmsd_A
 
     return df
 
