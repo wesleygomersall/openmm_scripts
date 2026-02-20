@@ -98,7 +98,7 @@ def atoms_to_res_contacts(atom_contact_df):
     
     maxframe = atom_contact_df['Frame'].max()
     for i in range(maxframe + 1):
-        temp_df = atom_contact_df.loc[df['Frame'] == i]
+        temp_df = atom_contact_df.loc[atom_contact_df['Frame'] == i]
         temp_df['res_pair'] = list(zip(temp_df['chainA_resn'], temp_df['chainB_resn']))
         unique_pairs = set(temp_df['res_pair'])
 
