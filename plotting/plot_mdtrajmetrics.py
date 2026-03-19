@@ -4,42 +4,34 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import argparse
 
-mycolors = ["red", "blue", "green", "yellow", "orange", "purple", "black"]
-mylabels = ["0.1", "0.25", "0.5", "1", "2", "5", "10"]
-mystyles = ["dotted", "solid"]
-displacement_col = "tRNA_displacement(nm)"
-displacement_files = [["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_0.1/output_displacement.csv", 
-                       "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_0.1/output_displacement.csv",], 
-                      ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_0.25/output_displacement.csv", 
-                       "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_0.25/output_displacement.csv",], 
-                      ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_0.5/output_displacement.csv", 
-                       "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_0.5/output_displacement.csv",], 
-                      ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_1/output_displacement.csv", 
-                       "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_1/output_displacement.csv",],
-                      ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_2/output_displacement.csv", 
-                       "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_2/output_displacement.csv",],
-                      ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_5/output_displacement.csv", 
-                       "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_5/output_displacement.csv",],
-                      ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141528_mut11_forcetest_10/output_displacement.csv", 
-                       "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141528_wt_forcetest_10/output_displacement.csv"],
-                      ]
+mycolors = ["red", "blue"]
+mylabels = ["M8", "M8_14"]
+mystyles = ["solid", "solid", "solid", "solid", "solid", "solid", "solid", "solid", "solid"]
 
-rmsd_col = "tRNA_RMSD(A)"
-rmsd_files = [["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_0.1/output_RMSDs.csv", 
-               "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_0.1/output_RMSDs.csv"], 
-              ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_0.25/output_RMSDs.csv", 
-               "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_0.25/output_RMSDs.csv"], 
-              ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_0.5/output_RMSDs.csv", 
-               "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_0.5/output_RMSDs.csv"], 
-              ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_1/output_RMSDs.csv", 
-               "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_1/output_RMSDs.csv"], 
-              ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_2/output_RMSDs.csv", 
-               "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_2/output_RMSDs.csv"], 
-              ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_mut11_forcetest_5/output_RMSDs.csv", 
-               "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141527_wt_forcetest_5/output_RMSDs.csv"], 
-              ["/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141528_mut11_forcetest_10/output_RMSDs.csv" , 
-               "/Users/wesg/PHlab/data/20251201_pus4forcetests_SMD/20251201T141528_wt_forcetest_10/output_RMSDs.csv"], 
-              ]
+displacement_col = "Ligand Displacement" # column titles in csvs
+# rmsd_col = "Peptide_RMSD(A)"
+
+disp_1 = [
+"20260122T095757_comdn230_M8_rep2/output_displacement.csv",
+"20260122T095757_comdn230_M8_rep3/output_displacement.csv",
+"20260122T095805_comdn230_M8_rep1/output_displacement.csv",
+        ] 
+disp_2 = [
+"20260122T095757_comdn230_M8-14_rep1/output_displacement.csv",
+"20260122T095757_comdn230_M8-14_rep2/output_displacement.csv",
+"20260122T095757_comdn230_M8-14_rep3/output_displacement.csv",
+        ] 
+
+rmsd_1 = [
+"20260122T095757_comdn230_M8_rep2/output_RMSDs.csv",
+"20260122T095757_comdn230_M8_rep3/output_RMSDs.csv",
+"20260122T095805_comdn230_M8_rep1/output_RMSDs.csv",
+        ] 
+rmsd_2 = [
+"20260122T095757_comdn230_M8-14_rep1/output_RMSDs.csv",
+"20260122T095757_comdn230_M8-14_rep2/output_RMSDs.csv",
+"20260122T095757_comdn230_M8-14_rep3/output_RMSDs.csv",
+        ] 
 
 def plot_mdtraj_outputs(files, colors, labels, ydata, time, 
                         ylabel = '',
@@ -85,19 +77,27 @@ if __name__ == "__main__":
     parser.add_argument("--time", "-t", type=float, default = 50.0, help="Time of trajectory in nanoseconds, default 50 ns.")
     args = parser.parse_args() 
 
-    args.datacol = displacement_col
+    all_displacements = []
+    all_displacements.append(disp_1)
+    all_displacements.append(disp_2) 
 
-    plot_mdtraj_outputs(displacement_files, 
-                        mycolors, mylabels, args.datacol, args.time, 
+    plot_mdtraj_outputs(all_displacements,
+                        mycolors, mylabels, displacement_col, args.time, 
                         ylabel = 'Displacement (nm)',
-                        title = 'Pus4 force tests tRNA displacement',
+                        title = 'Peptide displacement',
                         output_path = 'mdtraj_output_displacement.pdf',
                         linestyles = mystyles)
 
+    '''
+    all_rmsds = []
+    all_rmsds.append(rmsd_1)
+    all_rmsds.append(rmsd_2) 
     args.datacol = rmsd_col
-    plot_mdtraj_outputs(rmsd_files, 
-                        mycolors, mylabels, args.datacol, args.time, 
+    plot_mdtraj_outputs(all_rmsds, 
+                        mycolors, mylabels, rmsd_col, args.time, 
                         ylabel = 'RMSD (A)',
-                        title = 'Pus4 force tests tRNA RMSD',
+                        title = 'Peptide RMSD',
                         output_path = 'mdtraj_output_rmsd.pdf',
                         linestyles = mystyles)
+
+    '''
