@@ -12,16 +12,23 @@ def rmsd(trajectory, reference, chains, bb_only = True):
     '''
     df = pd.DataFrame()
     for chain_num, chain in enumerate(trajectory.topology.chains):
-        indices = trajectory.topology.select(f"chainid {chain_num}")
 
-        if bb_only: 
-            indices = np.intersect1d(indices, trajectory.topology.select('backbone'))
+        if chain_num > 1: 
+            # should be the first two chains in file
+            break 
 
-        chain_rmsd = md.rmsd(trajectory, trajectory, 0, indices)
-        chain_rmsd = chain_rmsd * 10 #(output in A)
+        try:
+            indices = trajectory.topology.select(f"chainid {chain_num}")
+            if bb_only: 
+                indices = np.intersect1d(indices, trajectory.topology.select('backbone'))
 
-        col_name = f"chain{chain_num}_RMSD(A)"
-        df[col_name] = chain_rmsd
+            chain_rmsd = md.rmsd(trajectory, trajectory, 0, indices)
+            chain_rmsd = chain_rmsd * 10 #(output in A)
+
+            col_name = f"chain{chain_num}_RMSD(A)"
+            df[col_name] = chain_rmsd
+        except:
+            print("likely tried to get RMSD of solvent molecules")
 
     return df
 
